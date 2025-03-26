@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -53,8 +54,14 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		fmt.Printf("%s[ERROR]%s %s: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
-	url := fmt.Sprintf("%s&srcToken=%s&destToken=%s&amount=%s&srcDecimals=6&destDecimals=18&side=SELL&excludeDEXS=%s&network=%s%s", start, endpoint.TokenIn, endpoint.TokenOut, endpoint.SwapAmount, ignoreList, endpoint.Network, end)
-	client := http.Client{Timeout: 5 * time.Second}
+	url := fmt.Sprintf("%s&srcToken=%s&destToken=%s&amount=%s&srcDecimals=%d&destDecimals=%d&side=SELL&excludeDEXS=%s&network=%s%s", start, endpoint.TokenIn, endpoint.TokenOut, endpoint.SwapAmount, endpoint.TokenInDecimals, endpoint.TokenOutDecimals, ignoreList, endpoint.Network, end)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			// For debugging, temporarily skip verification
+			InsecureSkipVerify: true,
+		},
+	}
+	client := http.Client{Timeout: 5 * time.Second, Transport: tr,}
 	resp, err := client.Get(url)
 
 	mu.Lock()
