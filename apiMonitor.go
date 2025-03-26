@@ -9,6 +9,7 @@ import (
 var (
 	enableParaswapChecks = true
 	enable1inchChecks    = false
+	enable0xChecks       = true
 )
 
 // Function to handle unsupported route solvers
@@ -31,6 +32,10 @@ func checkAPI(endpoint *Endpoint) {
 	case "1inch":
 		if enable1inchChecks {
 			check1inchAPI(endpoint)
+		}
+	case "0x":
+		if enable0xChecks {
+			check0xAPI(endpoint)
 		}
 	default:
 		checkUnsupportedAPI(endpoint)
