@@ -45,7 +45,7 @@ func monitorAPIs(endpoints []Endpoint) {
 			// Perform initial check immediately
 			checkAPI(endpoint)
 			
-			ticker := time.NewTicker(time.Duration(endpoint.CheckInterval) * time.Minute)
+			ticker := time.NewTicker(time.Duration(endpoint.CheckInterval) * time.Hour)
 			defer ticker.Stop()
 
 			for range ticker.C {
