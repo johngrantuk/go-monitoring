@@ -83,6 +83,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 			.status-up { background-color: #90EE90; }
 			.status-down { background-color: #FFB6C1; }
 			.status-unknown { background-color: #FFA500; }
+			.status-disabled { background-color: #D3D3D3; }
 			table { border-collapse: collapse; width: 100%; }
 			th, td { padding: 8px; text-align: left; }
 			.name-column { white-space: nowrap; }
@@ -121,6 +122,8 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 			statusClass = "status-up"
 		} else if endpoint.LastStatus == "down" {
 			statusClass = "status-down"
+		} else if endpoint.LastStatus == "disabled" {
+			statusClass = "status-disabled"
 		}
 		tokenInfo := fmt.Sprintf("In: %s<br>Out: %s<br>Pool: %s", endpoint.TokenIn, endpoint.TokenOut, endpoint.ExpectedPool)
 		fmt.Fprintf(w, "<tr><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td class='token-info'>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",

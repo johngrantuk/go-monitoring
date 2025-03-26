@@ -28,14 +28,35 @@ func checkAPI(endpoint *Endpoint) {
 	case "paraswap":
 		if enableParaswapChecks {
 			checkParaswapAPI(endpoint)
+		} else {
+			mu.Lock()
+			endpoint.LastStatus = "disabled"
+			endpoint.Message = "Paraswap checks are disabled"
+			endpoint.LastChecked = time.Now()
+			mu.Unlock()
+			fmt.Printf("%s[INFO]%s %s: Paraswap checks are disabled\n", colorYellow, colorReset, endpoint.Name)
 		}
 	case "1inch":
 		if enable1inchChecks {
 			check1inchAPI(endpoint)
+		} else {
+			mu.Lock()
+			endpoint.LastStatus = "disabled"
+			endpoint.Message = "1inch checks are disabled"
+			endpoint.LastChecked = time.Now()
+			mu.Unlock()
+			fmt.Printf("%s[INFO]%s %s: 1inch checks are disabled\n", colorYellow, colorReset, endpoint.Name)
 		}
 	case "0x":
 		if enable0xChecks {
 			check0xAPI(endpoint)
+		} else {
+			mu.Lock()
+			endpoint.LastStatus = "disabled"
+			endpoint.Message = "0x checks are disabled"
+			endpoint.LastChecked = time.Now()
+			mu.Unlock()
+			fmt.Printf("%s[INFO]%s %s: 0x checks are disabled\n", colorYellow, colorReset, endpoint.Name)
 		}
 	default:
 		checkUnsupportedAPI(endpoint)
