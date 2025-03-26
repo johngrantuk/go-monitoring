@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -88,7 +89,12 @@ func check0xAPI(endpoint *Endpoint) {
 	req.Header.Add("0x-version", "v2")
 
 	// Create an HTTP client and send the request
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req)
 	if err != nil {
 		endpoint.LastStatus = "down"
