@@ -43,7 +43,7 @@ type ParaswapResponse struct {
 // Function to check Paraswap API status
 func checkParaswapAPI(endpoint *Endpoint) {
 	start := "https://api.paraswap.io/prices/?version=6.2"
-	end := "&otherExchangePrices=true&partner=paraswap.io&userAddress=0x0000000000000000000000000000000000000000"
+	end := "&otherExchangePrices=true&partner=paraswap.io&userAddress=0x0000000000000000000000000000000000000000&ignoreBadUsdPrice=true"
 	ignoreList, err := getIgnoreList(endpoint.Network)
 	if err != nil {
 		mu.Lock()
@@ -55,6 +55,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		return
 	}
 	url := fmt.Sprintf("%s&srcToken=%s&destToken=%s&amount=%s&srcDecimals=%d&destDecimals=%d&side=SELL&excludeDEXS=%s&network=%s%s", start, endpoint.TokenIn, endpoint.TokenOut, endpoint.SwapAmount, endpoint.TokenInDecimals, endpoint.TokenOutDecimals, ignoreList, endpoint.Network, end)
+	// fmt.Println(url)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			// For debugging, temporarily skip verification
