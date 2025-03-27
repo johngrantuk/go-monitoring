@@ -419,7 +419,7 @@ func main() {
 	}
 
 	go monitorAPIs(endpoints) // Start monitoring in the background
-
+	sendEmail("Service starting")
 	http.HandleFunc("/", dashboardHandler)
 	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", nil)

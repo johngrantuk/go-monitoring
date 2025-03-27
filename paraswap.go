@@ -52,6 +52,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.Message = fmt.Sprintf("Error getting ignore list: %v", err)
 		mu.Unlock()
 		fmt.Printf("%s[ERROR]%s %s: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Error getting ignore list: %v", endpoint.Name, err))
 		return
 	}
 	url := fmt.Sprintf("%s&srcToken=%s&destToken=%s&amount=%s&srcDecimals=%d&destDecimals=%d&side=SELL&excludeDEXS=%s&network=%s%s", start, endpoint.TokenIn, endpoint.TokenOut, endpoint.SwapAmount, endpoint.TokenInDecimals, endpoint.TokenOutDecimals, ignoreList, endpoint.Network, end)
@@ -73,6 +74,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Request failed: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Request failed: %v", endpoint.Name, err))
 		return
 	}
 	defer resp.Body.Close()
@@ -83,6 +85,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to read response: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Failed to read response: %v", endpoint.Name, err))
 		return
 	}
 
@@ -91,6 +94,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = "No routes found with enough liquidity"
 		fmt.Printf("%s[ERROR]%s %s: No routes found with enough liquidity\n", colorRed, colorReset, endpoint.Name)
+		sendEmail(fmt.Sprintf("[%s] No routes found with enough liquidity", endpoint.Name))
 		return
 	}
 
@@ -101,6 +105,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.Message = fmt.Sprintf("Failed to parse response: %v", err)
 		prettyJSON, _ := json.MarshalIndent(paraswapResp, "", "    ")
 		fmt.Printf("%s[ERROR]%s %s: Failed response body:\n%s\n", colorRed, colorReset, endpoint.Name, string(prettyJSON))
+		sendEmail(fmt.Sprintf("[%s] Failed to parse response: %v\nResponse body:\n%s", endpoint.Name, err, string(prettyJSON)))
 		return
 	}
 
@@ -117,6 +122,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 					endpoint.Message = fmt.Sprintf("Found exchange %s, expected BalancerV3", exchange.Exchange)
 					prettyJSON, _ := json.MarshalIndent(paraswapResp, "", "    ")
 					fmt.Printf("%s[ERROR]%s %s: Found exchange %s, expected BalancerV3\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, exchange.Exchange, string(prettyJSON))
+					sendEmail(fmt.Sprintf("[%s] Found exchange %s, expected BalancerV3\nResponse body:\n%s", endpoint.Name, exchange.Exchange, string(prettyJSON)))
 					break
 				}
 				// hasExpectedPool := false
@@ -146,6 +152,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		endpoint.Message = fmt.Sprintf("Expected pool %s not found in any route", expectedPool)
 		prettyJSON, _ := json.MarshalIndent(paraswapResp, "", "    ")
 		fmt.Printf("%s[ERROR]%s %s: Expected pool %s not found in any route\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, expectedPool, string(prettyJSON))
+		sendEmail(fmt.Sprintf("[%s] Expected pool %s not found in any route\nResponse body:\n%s", endpoint.Name, expectedPool, string(prettyJSON)))
 	}
 
 	if resp.StatusCode == http.StatusOK && allBalancerV3 && hasExpectedPool {
@@ -160,11 +167,13 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		}
 		endpoint.Message = fmt.Sprintf("Status code: %d,\nAll BalancerV3: %v\n%s", resp.StatusCode, allBalancerV3, errorMsg)
 		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s %d %v%s Response body:\n%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset, resp.StatusCode, allBalancerV3, errorMsg, string(body))
+		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, All BalancerV3: %v%s\nResponse body:\n%s", endpoint.Name, resp.StatusCode, allBalancerV3, errorMsg, string(body)))
 	}
 
 	// Debug 404 status code
 	if resp.StatusCode == http.StatusNotFound {
 		endpoint.Message = "404 Not Found" + string(body)
 		fmt.Printf("%s[DEBUG]%s %s: 404 Not Found - Response body: %s\n", colorYellow, colorReset, endpoint.Name, string(body))
+		sendEmail(fmt.Sprintf("[%s] 404 Not Found - Response body: %s", endpoint.Name, string(body)))
 	}
 } 

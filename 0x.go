@@ -51,6 +51,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "error"
 		endpoint.Message = fmt.Sprintf("Error getting ignore list: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Error getting ignore list: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Error getting ignore list: %v", endpoint.Name, err))
 		return
 	}
 
@@ -72,6 +73,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Error creating request: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Error creating request: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Error creating request: %v", endpoint.Name, err))
 		return
 	}
 
@@ -81,6 +83,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "error"
 		endpoint.Message = "ZEROX_API_KEY environment variable not set"
 		fmt.Printf("%s[ERROR]%s %s: ZEROX_API_KEY environment variable not set\n", colorRed, colorReset, endpoint.Name)
+		sendEmail(fmt.Sprintf("[%s] ZEROX_API_KEY environment variable not set", endpoint.Name))
 		return
 	}
 
@@ -100,6 +103,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Error sending request: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Error sending request: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Error sending request: %v", endpoint.Name, err))
 		return
 	}
 	defer resp.Body.Close()
@@ -110,6 +114,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Error reading response: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Error reading response: %v\n", colorRed, colorReset, endpoint.Name, err)
+		sendEmail(fmt.Sprintf("[%s] Error reading response: %v", endpoint.Name, err))
 		return
 	}
 	// fmt.Printf("%s[DEBUG]%s %s: Response body:\n%s\n", colorYellow, colorReset, endpoint.Name, string(body))
@@ -121,6 +126,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Error parsing JSON: %v", err)
 		fmt.Printf("%s[ERROR]%s %s: Error parsing JSON: %v\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, err, string(body))
+		sendEmail(fmt.Sprintf("[%s] Error parsing JSON: %v\nResponse body:\n%s", endpoint.Name, err, string(body)))
 		return
 	}
 
@@ -132,6 +138,7 @@ func check0xAPI(endpoint *Endpoint) {
 			endpoint.Message = fmt.Sprintf("Found source %s, expected Balancer_V3", fill.Source)
 			prettyJSON, _ := json.MarshalIndent(result, "", "    ")
 			fmt.Printf("%s[ERROR]%s %s: Found source %s, expected Balancer_V3\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, fill.Source, string(prettyJSON))
+			sendEmail(fmt.Sprintf("[%s] Found source %s, expected Balancer_V3\nResponse body:\n%s", endpoint.Name, fill.Source, string(prettyJSON)))
 			break
 		}
 	}
@@ -148,6 +155,7 @@ func check0xAPI(endpoint *Endpoint) {
 		endpoint.Message = fmt.Sprintf("Expected %d tokens (hops + 2), got %d", expectedTokens, len(result.Route.Tokens))
 		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
 		fmt.Printf("%s[ERROR]%s %s: Expected %d tokens (hops + 2), got %d\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, expectedTokens, len(result.Route.Tokens), string(prettyJSON))
+		sendEmail(fmt.Sprintf("[%s] Expected %d tokens (hops + 2), got %d\nResponse body:\n%s", endpoint.Name, expectedTokens, len(result.Route.Tokens), string(prettyJSON)))
 		return
 	}
 
