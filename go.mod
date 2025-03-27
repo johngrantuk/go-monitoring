@@ -1,8 +1,8 @@
 module go-monitoring
 
-go 1.20
+go 1.23
 
 require (
-	github.com/joho/godotenv v1.5.1 // indirect
-	github.com/resend/resend-go/v2 v2.17.0 // indirect
+	github.com/joho/godotenv v1.5.1
+	github.com/resend/resend-go/v2 v2.16.0
 )
