@@ -7,10 +7,10 @@ import (
 
 // Global flags to enable/disable specific API checks
 var (
-	enableParaswapChecks = false
+	enableParaswapChecks = true
 	enable1inchChecks    = false
 	enable0xChecks       = true
-	enableEmailSending   = false
+	enableEmailSending   = true
 )
 
 // Function to handle unsupported route solvers
