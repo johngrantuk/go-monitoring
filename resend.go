@@ -3,12 +3,19 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/resend/resend-go/v2"
 	"net/http"
 	"os"
+
+	"github.com/resend/resend-go/v2"
 )
 
 func sendEmail(message string) {
+	// Check if email sending is enabled
+	if !enableEmailSending {
+		fmt.Printf("%s[INFO]%s: Email sending is disabled\n", colorYellow, colorReset)
+		return
+	}
+
 	// Get API key from environment variable
 	apiKey := os.Getenv("RESEND_API_KEY")
 	if apiKey == "" {

@@ -7,9 +7,10 @@ import (
 
 // Global flags to enable/disable specific API checks
 var (
-	enableParaswapChecks = true
+	enableParaswapChecks = false
 	enable1inchChecks    = false
 	enable0xChecks       = true
+	enableEmailSending   = false
 )
 
 // Function to handle unsupported route solvers
@@ -70,7 +71,7 @@ func monitorAPIs(endpoints []Endpoint) {
 		go func(endpoint *Endpoint) {
 			// Perform initial check immediately
 			checkAPI(endpoint)
-			
+
 			ticker := time.NewTicker(time.Duration(endpoint.CheckInterval) * time.Hour)
 			defer ticker.Stop()
 
@@ -79,4 +80,4 @@ func monitorAPIs(endpoints []Endpoint) {
 			}
 		}(&endpoints[i])
 	}
-} 
+}
