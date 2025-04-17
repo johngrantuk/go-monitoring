@@ -27,7 +27,7 @@ func getIgnoreList(network string) (string, error) {
 
 // ParaswapResponse represents the structure of the Paraswap API response
 type ParaswapResponse struct {
-	Error       string `json:"error,omitempty"`
+	Error      string `json:"error,omitempty"`
 	PriceRoute struct {
 		BestRoute []struct {
 			Swaps []struct {
@@ -63,7 +63,7 @@ func checkParaswapAPI(endpoint *Endpoint) {
 			InsecureSkipVerify: true,
 		},
 	}
-	client := http.Client{Timeout: 5 * time.Second, Transport: tr,}
+	client := http.Client{Timeout: 5 * time.Second, Transport: tr}
 	resp, err := client.Get(url)
 
 	mu.Lock()
@@ -165,9 +165,9 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		if paraswapResp.Error != "" {
 			errorMsg = fmt.Sprintf(", Error: %s", paraswapResp.Error)
 		}
-		endpoint.Message = fmt.Sprintf("Status code: %d,\nAll BalancerV3: %v\n%s", resp.StatusCode, allBalancerV3, errorMsg)
-		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s %d %v%s Response body:\n%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset, resp.StatusCode, allBalancerV3, errorMsg, string(body))
-		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, All BalancerV3: %v%s\nResponse body:\n%s", endpoint.Name, resp.StatusCode, allBalancerV3, errorMsg, string(body)))
+		endpoint.Message = fmt.Sprintf("Status code: %d,\nAll BalancerV3: %v,\nHas Expected Pool: %v\n%s", resp.StatusCode, allBalancerV3, hasExpectedPool, errorMsg)
+		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s %d %v %v%s Response body:\n%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset, resp.StatusCode, allBalancerV3, hasExpectedPool, errorMsg, string(body))
+		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, All BalancerV3: %v, Has Expected Pool: %v%s\nResponse body:\n%s", endpoint.Name, resp.StatusCode, allBalancerV3, hasExpectedPool, errorMsg, string(body)))
 	}
 
 	// Debug 404 status code
@@ -176,4 +176,4 @@ func checkParaswapAPI(endpoint *Endpoint) {
 		fmt.Printf("%s[DEBUG]%s %s: 404 Not Found - Response body: %s\n", colorYellow, colorReset, endpoint.Name, string(body))
 		sendEmail(fmt.Sprintf("[%s] 404 Not Found - Response body: %s", endpoint.Name, string(body)))
 	}
-} 
+}
