@@ -117,6 +117,22 @@ func main() {
 			NotificationRecipient: "test@example.com",
 		},
 		{
+			Name:                  "Paraswap-Base-GyroE(EZKL)-WETH/USDC",
+			RouteSolver:           "paraswap",
+			Network:               "8453",
+			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
+			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
+			TokenInDecimals:       18,
+			TokenOutDecimals:      6,
+			ExpectedPool:          "0x81a85b9ec797110f2ee665c119e8f28a2456d6f1",
+			SwapAmount:            "5000000000000000000",
+			CheckInterval:         10,
+			LastStatus:            "unknown",
+			LastChecked:           time.Time{},
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+		},
+		{
 			Name:                  "Paraswap-Arbitrum-Boosted(WETH/WSTETH)",
 			RouteSolver:           "paraswap",
 			Network:               "42161",
