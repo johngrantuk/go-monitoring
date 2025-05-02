@@ -7,10 +7,7 @@ import (
 
 // Global flags to enable/disable specific API checks
 var (
-	enableParaswapChecks = true
-	enable1inchChecks    = false
-	enable0xChecks       = true
-	enableEmailSending   = true
+	enableEmailSending = true
 )
 
 // Function to handle unsupported route solvers
@@ -27,38 +24,11 @@ func checkUnsupportedAPI(endpoint *Endpoint) {
 func checkAPI(endpoint *Endpoint) {
 	switch endpoint.RouteSolver {
 	case "paraswap":
-		if enableParaswapChecks {
-			checkParaswapAPI(endpoint)
-		} else {
-			mu.Lock()
-			endpoint.LastStatus = "disabled"
-			endpoint.Message = "Paraswap checks are disabled"
-			endpoint.LastChecked = time.Now()
-			mu.Unlock()
-			fmt.Printf("%s[INFO]%s %s: Paraswap checks are disabled\n", colorYellow, colorReset, endpoint.Name)
-		}
+		checkParaswapAPI(endpoint)
 	case "1inch":
-		if enable1inchChecks {
-			check1inchAPI(endpoint)
-		} else {
-			mu.Lock()
-			endpoint.LastStatus = "disabled"
-			endpoint.Message = "1inch checks are disabled"
-			endpoint.LastChecked = time.Now()
-			mu.Unlock()
-			fmt.Printf("%s[INFO]%s %s: 1inch checks are disabled\n", colorYellow, colorReset, endpoint.Name)
-		}
+		check1inchAPI(endpoint)
 	case "0x":
-		if enable0xChecks {
-			check0xAPI(endpoint)
-		} else {
-			mu.Lock()
-			endpoint.LastStatus = "disabled"
-			endpoint.Message = "0x checks are disabled"
-			endpoint.LastChecked = time.Now()
-			mu.Unlock()
-			fmt.Printf("%s[INFO]%s %s: 0x checks are disabled\n", colorYellow, colorReset, endpoint.Name)
-		}
+		check0xAPI(endpoint)
 	default:
 		checkUnsupportedAPI(endpoint)
 	}

@@ -7,38 +7,83 @@ import (
 	"time"
 )
 
+// BaseEndpoint represents the common configuration for an endpoint
+type BaseEndpoint struct {
+	Name                  string
+	Network               string
+	TokenIn               string
+	TokenOut              string
+	TokenInDecimals       int
+	TokenOutDecimals      int
+	ExpectedPool          string
+	SwapAmount            string
+	ExpectedNoHops        int
+	CheckInterval         int
+	NotificationType      string
+	NotificationRecipient string
+}
+
+// RouteSolver represents a specific route solver configuration
+type RouteSolver struct {
+	Name              string
+	Type              string // "paraswap", "1inch", "0x"
+	SupportedNetworks []string
+	Enabled           bool
+}
+
 // Endpoint represents a monitored API endpoint
 type Endpoint struct {
 	Name                  string
+	BaseName              string
+	SolverName            string
 	RouteSolver           string
 	Network               string
 	TokenIn               string
-	TokenInDecimals       int
 	TokenOut              string
+	TokenInDecimals       int
 	TokenOutDecimals      int
 	SwapAmount            string
 	ExpectedPool          string
-	ExpectedNoHops        int    // Number of hops expected in the route (0 for direct swap, 1 for one intermediate token, etc.)
-	CheckInterval         int    // minutes
-	LastStatus            string // "up", "down", or "unknown"
+	ExpectedNoHops        int
+	CheckInterval         int
+	LastStatus            string
 	LastChecked           time.Time
-	NotificationType      string // "email" or "slack"
+	NotificationType      string
 	NotificationRecipient string
-	Message               string // Status message for the last check
+	Message               string
 }
 
 // API monitoring data
 var (
-	endpoints = make([]Endpoint, 0)
-	mu        sync.Mutex // Prevents race conditions
+	endpoints    = make([]Endpoint, 0)
+	mu           sync.Mutex // Prevents race conditions
+	routeSolvers = []RouteSolver{
+		{
+			Name:              "Paraswap",
+			Type:              "paraswap",
+			SupportedNetworks: []string{"1", "8453", "42161", "100"}, // Mainnet, Base, Arbitrum, Gnosis
+			Enabled:           true,
+		},
+		{
+			Name:              "1inch",
+			Type:              "1inch",
+			SupportedNetworks: []string{"1", "8453", "42161", "100"}, // Mainnet, Base, Arbitrum, Gnosis
+			Enabled:           false,
+		},
+		{
+			Name:              "0x",
+			Type:              "0x",
+			SupportedNetworks: []string{"1", "8453", "42161"}, // Mainnet, Base, Arbitrum
+			Enabled:           true,
+		},
+	}
 )
 
 func main() {
-	// Initialize endpoints
-	endpoints = []Endpoint{
+	// Define base endpoint configurations
+	baseEndpoints := []BaseEndpoint{
 		{
-			Name:                  "Paraswap-Mainet-Boosted",
-			RouteSolver:           "paraswap",
+			Name:                  "Mainet-Boosted",
 			Network:               "1",
 			TokenIn:               "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
 			TokenOut:              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
@@ -47,14 +92,12 @@ func main() {
 			ExpectedPool:          "0x85b2b559bc2d21104c4defdd6efca8a20343361d",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Mainet-Boosted-StableSurge",
-			RouteSolver:           "paraswap",
+			Name:                  "Mainet-Boosted-StableSurge",
 			Network:               "1",
 			TokenIn:               "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", // wstETH
 			TokenOut:              "0xd11c452fc99cf405034ee446803b6f6c1f6d5ed8", // tETH
@@ -63,14 +106,12 @@ func main() {
 			ExpectedPool:          "0x9ed5175aecb6653c1bdaa19793c16fd74fbeeb37",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Base-Boosted",
-			RouteSolver:           "paraswap",
+			Name:                  "Base-Boosted",
 			Network:               "8453",
 			TokenIn:               "0x4200000000000000000000000000000000000006", // weth
 			TokenOut:              "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", // wstETH
@@ -79,14 +120,12 @@ func main() {
 			ExpectedPool:          "0xacba78d745faae7751c09489d5f15a26eb27f1ad",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Base-Boosted-StableSurge",
-			RouteSolver:           "paraswap",
+			Name:                  "Base-Boosted-StableSurge",
 			Network:               "8453",
 			TokenIn:               "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
 			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
@@ -95,14 +134,12 @@ func main() {
 			ExpectedPool:          "0x7ab124ec4029316c2a42f713828ddf2a192b36db",
 			SwapAmount:            "10000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Base-Boosted-StableSurge-WETH/USDC",
-			RouteSolver:           "paraswap",
+			Name:                  "Base-Boosted-StableSurge-WETH/USDC",
 			Network:               "8453",
 			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
 			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
@@ -111,30 +148,12 @@ func main() {
 			ExpectedPool:          "0xcb80b1a9e7b319a4c5ec6b0666967ca1e309e40f",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Base-GyroE(EZKL)-WETH/USDC",
-			RouteSolver:           "paraswap",
-			Network:               "8453",
-			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0x81a85b9ec797110f2ee665c119e8f28a2456d6f1",
-			SwapAmount:            "5000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "Paraswap-Arbitrum-Boosted(WETH/WSTETH)",
-			RouteSolver:           "paraswap",
+			Name:                  "Arbitrum-Boosted(WETH/WSTETH)",
 			Network:               "42161",
 			TokenIn:               "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH
 			TokenOut:              "0x5979D7b546E38E414F7E9822514be443A4800529", // WSTETH
@@ -143,30 +162,12 @@ func main() {
 			ExpectedPool:          "0xc072880e1bc0bcddc99db882c7f3e7a839281cf4",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Arbitrum-Boosted(USDC/yUSD)",
-			RouteSolver:           "paraswap",
-			Network:               "42161",
-			TokenIn:               "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-			TokenOut:              "0x895e15020c3f52ddd4d8e9514eb83c39f53b1579",
-			TokenInDecimals:       6,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0x7abe8caa137cdb2490a9fa9f8be70cfbb0ff8652",
-			SwapAmount:            "10000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "Paraswap-Arbitrum-Boosted-StableSurge(GHO/USDC)",
-			RouteSolver:           "paraswap",
+			Name:                  "Arbitrum-Boosted-StableSurge(GHO/USDC)",
 			Network:               "42161",
 			TokenIn:               "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", // GHO
 			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
@@ -175,14 +176,12 @@ func main() {
 			ExpectedPool:          "0x19b001e6bc2d89154c18e2216eec5c8c6047b6d8",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Paraswap-Arbitrum-Boosted-GyroE(eBTC/USDC)",
-			RouteSolver:           "paraswap",
+			Name:                  "Arbitrum-Boosted-GyroE(eBTC/USDC)",
 			Network:               "42161",
 			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
 			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
@@ -192,14 +191,11 @@ func main() {
 			ExpectedNoHops:        1,
 			SwapAmount:            "1000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
 		},
 		{
-			Name:                  "Paraswap-Gnosis-Boosted",
-			RouteSolver:           "paraswap",
+			Name:                  "Gnosis-Boosted",
 			Network:               "100",
 			TokenIn:               "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1", // WETH
 			TokenOut:              "0x6c76971f98945ae98dd7d4dfca8711ebea946ea6", // wstETH
@@ -208,264 +204,55 @@ func main() {
 			ExpectedPool:          "0x6e6bb18449fcf15b79efa2cfa70acf7593088029",
 			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
-		},
-		////////////////////////////////////////// 1inch
-		{
-			Name:                  "1inch-Mainnet-Boosted",
-			RouteSolver:           "1inch",
-			Network:               "1",
-			TokenIn:               "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
-			TokenOut:              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
-			ExpectedPool:          "0x85b2b559bc2d21104c4defdd6efca8a20343361d",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Base-Boosted",
-			RouteSolver:           "1inch",
-			Network:               "8453",
-			TokenIn:               "0x4200000000000000000000000000000000000006", // weth
-			TokenOut:              "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", // wstETH
-			ExpectedPool:          "0xacba78d745faae7751c09489d5f15a26eb27f1ad",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Base-Boosted-StableSurge",
-			RouteSolver:           "1inch",
-			Network:               "8453",
-			TokenIn:               "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			ExpectedPool:          "0x7ab124ec4029316c2a42f713828ddf2a192b36db",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Arbitrum-Boosted",
-			RouteSolver:           "1inch",
-			Network:               "42161",
-			TokenIn:               "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH
-			TokenOut:              "0x5979D7b546E38E414F7E9822514be443A4800529", // WSTETH
-			ExpectedPool:          "0xc072880e1bc0bcddc99db882c7f3e7a839281cf4",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Arbitrum-Boosted-StableSurge",
-			RouteSolver:           "1inch",
-			Network:               "42161",
-			TokenIn:               "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", // GHO
-			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
-			ExpectedPool:          "0x19b001e6bc2d89154c18e2216eec5c8c6047b6d8",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Arbitrum-Boosted-GyroE",
-			RouteSolver:           "1inch",
-			Network:               "42161",
-			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
-			TokenOut:              "0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe", // weETH
-			ExpectedPool:          "0x2d39c2ddf0ae652071d0550718cc7aacaf647d39",
-			SwapAmount:            "10000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "1inch-Gnosis-Boosted",
-			RouteSolver:           "1inch",
-			Network:               "100",
-			TokenIn:               "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1", // WETH
-			TokenOut:              "0x6c76971f98945ae98dd7d4dfca8711ebea946ea6", // wstETH
-			ExpectedPool:          "0x6e6bb18449fcf15b79efa2cfa70acf7593088029",
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		////////////////////////////////////////// 0x
-		{
-			Name:                  "0x-Mainet-Boosted",
-			RouteSolver:           "0x",
-			Network:               "1",
-			TokenIn:               "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
-			TokenOut:              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0x85b2b559bc2d21104c4defdd6efca8a20343361d",
 			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
 		},
-		{
-			Name:                  "0x-Mainet-Boosted-StableSurge",
-			RouteSolver:           "0x",
-			Network:               "1",
-			TokenIn:               "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", // wstETH
-			TokenOut:              "0xd11c452fc99cf405034ee446803b6f6c1f6d5ed8", // tETH
-			TokenInDecimals:       18,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0x9ed5175aecb6653c1bdaa19793c16fd74fbeeb37",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Base-Boosted",
-			RouteSolver:           "0x",
-			Network:               "8453",
-			TokenIn:               "0x4200000000000000000000000000000000000006", // weth
-			TokenOut:              "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", // wstETH
-			TokenInDecimals:       18,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0xacba78d745faae7751c09489d5f15a26eb27f1ad",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Base-Boosted-StableSurge",
-			RouteSolver:           "0x",
-			Network:               "8453",
-			TokenIn:               "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0x7ab124ec4029316c2a42f713828ddf2a192b36db",
-			ExpectedNoHops:        1,
-			SwapAmount:            "10000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Base-Boosted-StableSurge-WETH/USDC",
-			RouteSolver:           "0x",
-			Network:               "8453",
-			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0xcb80b1a9e7b319a4c5ec6b0666967ca1e309e40f",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Arbitrum-Boosted",
-			RouteSolver:           "0x",
-			Network:               "42161",
-			TokenIn:               "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH
-			TokenOut:              "0x5979D7b546E38E414F7E9822514be443A4800529", // WSTETH
-			TokenInDecimals:       18,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0xc072880e1bc0bcddc99db882c7f3e7a839281cf4",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Arbitrum-Boosted-StableSurge",
-			RouteSolver:           "0x",
-			Network:               "42161",
-			TokenIn:               "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", // GHO
-			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0x19b001e6bc2d89154c18e2216eec5c8c6047b6d8",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Arbitrum-Boosted-GyroE(eBTC/USDC)",
-			RouteSolver:           "0x",
-			Network:               "42161",
-			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
-			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
-			TokenInDecimals:       8,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0xa0e5e7728e026bde02810d255a6b94a9aa47b5f9",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Arbitrum-Boosted(USDC/yUSD)",
-			RouteSolver:           "0x",
-			Network:               "42161",
-			TokenIn:               "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-			TokenOut:              "0x895e15020c3f52ddd4d8e9514eb83c39f53b1579",
-			TokenInDecimals:       6,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0x7abe8caa137cdb2490a9fa9f8be70cfbb0ff8652",
-			ExpectedNoHops:        1,
-			SwapAmount:            "10000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
+	}
+
+	// Generate endpoints by combining base configurations with route solvers
+	for _, base := range baseEndpoints {
+		for _, solver := range routeSolvers {
+			// Skip disabled solvers
+			if !solver.Enabled {
+				continue
+			}
+
+			// Check if the solver supports this network
+			supported := false
+			for _, network := range solver.SupportedNetworks {
+				if network == base.Network {
+					supported = true
+					break
+				}
+			}
+
+			if !supported {
+				continue // Skip unsupported network combinations
+			}
+
+			endpoint := Endpoint{
+				Name:                  fmt.Sprintf("%s-%s", solver.Name, base.Name),
+				BaseName:              base.Name,
+				SolverName:            solver.Name,
+				RouteSolver:           solver.Type,
+				Network:               base.Network,
+				TokenIn:               base.TokenIn,
+				TokenOut:              base.TokenOut,
+				TokenInDecimals:       base.TokenInDecimals,
+				TokenOutDecimals:      base.TokenOutDecimals,
+				SwapAmount:            base.SwapAmount,
+				ExpectedPool:          base.ExpectedPool,
+				ExpectedNoHops:        base.ExpectedNoHops,
+				CheckInterval:         base.CheckInterval,
+				LastStatus:            "unknown",
+				LastChecked:           time.Time{},
+				NotificationType:      base.NotificationType,
+				NotificationRecipient: base.NotificationRecipient,
+				Message:               "",
+			}
+			endpoints = append(endpoints, endpoint)
+		}
 	}
 
 	go monitorAPIs(endpoints) // Start monitoring in the background
