@@ -181,22 +181,6 @@ func main() {
 			NotificationRecipient: "test@example.com",
 		},
 		{
-			Name:                  "Paraswap-Arbitrum-Boosted-GyroE(eBTC/weETH)",
-			RouteSolver:           "paraswap",
-			Network:               "42161",
-			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
-			TokenOut:              "0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe", // weETH
-			TokenInDecimals:       8,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0x2d39c2ddf0ae652071d0550718cc7aacaf647d39",
-			SwapAmount:            "10000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
 			Name:                  "Paraswap-Arbitrum-Boosted-GyroE(eBTC/USDC)",
 			RouteSolver:           "paraswap",
 			Network:               "42161",
@@ -442,23 +426,6 @@ func main() {
 			ExpectedPool:          "0x19b001e6bc2d89154c18e2216eec5c8c6047b6d8",
 			ExpectedNoHops:        1,
 			SwapAmount:            "1000000000000000000",
-			CheckInterval:         10,
-			LastStatus:            "unknown",
-			LastChecked:           time.Time{},
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-		},
-		{
-			Name:                  "0x-Arbitrum-Boosted-GyroE(eBTC/weETH)",
-			RouteSolver:           "0x",
-			Network:               "42161",
-			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
-			TokenOut:              "0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe", // weETH
-			TokenInDecimals:       8,
-			TokenOutDecimals:      18,
-			ExpectedPool:          "0x2d39c2ddf0ae652071d0550718cc7aacaf647d39",
-			ExpectedNoHops:        1,
-			SwapAmount:            "1000000",
 			CheckInterval:         10,
 			LastStatus:            "unknown",
 			LastChecked:           time.Time{},
