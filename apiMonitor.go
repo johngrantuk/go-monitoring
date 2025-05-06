@@ -60,7 +60,7 @@ func monitorAPIs(endpoints []Endpoint) {
 		for i := range endpoints {
 			checkAPI(&endpoints[i])
 			// Add 5 second delay between each endpoint check
-			time.Sleep(2 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
