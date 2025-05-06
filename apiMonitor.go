@@ -7,7 +7,7 @@ import (
 
 // Global flags to enable/disable specific API checks
 var (
-	enableEmailSending = false
+	enableEmailSending = true
 )
 
 // Function to handle unsupported route solvers
