@@ -7,7 +7,7 @@ import (
 
 // Global flags to enable/disable specific API checks
 var (
-	enableEmailSending = true
+	enableEmailSending = false
 )
 
 // Function to handle unsupported route solvers
@@ -36,18 +36,31 @@ func checkAPI(endpoint *Endpoint) {
 
 // Function to periodically check API status
 func monitorAPIs(endpoints []Endpoint) {
-	// Create tickers for each endpoint based on their check intervals
+	// Create a single ticker for all endpoints
+	// Use the minimum check interval from all endpoints
+	minInterval := endpoints[0].CheckInterval
+	for _, endpoint := range endpoints {
+		if endpoint.CheckInterval < minInterval {
+			minInterval = endpoint.CheckInterval
+		}
+	}
+
+	ticker := time.NewTicker(time.Duration(minInterval) * time.Hour)
+	defer ticker.Stop()
+
+	// Perform initial checks immediately
 	for i := range endpoints {
-		go func(endpoint *Endpoint) {
-			// Perform initial check immediately
-			checkAPI(endpoint)
+		checkAPI(&endpoints[i])
+		// Add 5 second delay between each endpoint check
+		time.Sleep(2 * time.Second)
+	}
 
-			ticker := time.NewTicker(time.Duration(endpoint.CheckInterval) * time.Hour)
-			defer ticker.Stop()
-
-			for range ticker.C {
-				checkAPI(endpoint)
-			}
-		}(&endpoints[i])
+	// Check all endpoints when ticker triggers
+	for range ticker.C {
+		for i := range endpoints {
+			checkAPI(&endpoints[i])
+			// Add 5 second delay between each endpoint check
+			time.Sleep(2 * time.Second)
+		}
 	}
 }
