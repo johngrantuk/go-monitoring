@@ -29,6 +29,8 @@ func checkAPI(endpoint *Endpoint) {
 		check1inchAPI(endpoint)
 	case "0x":
 		check0xAPI(endpoint)
+	case "odos":
+		checkOdosAPI(endpoint)
 	default:
 		checkUnsupportedAPI(endpoint)
 	}

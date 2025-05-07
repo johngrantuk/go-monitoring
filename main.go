@@ -76,6 +76,12 @@ var (
 			SupportedNetworks: []string{"1", "8453", "42161"}, // Mainnet, Base, Arbitrum
 			Enabled:           true,
 		},
+		{
+			Name:              "Odos",
+			Type:              "odos",
+			SupportedNetworks: []string{"1", "8453", "42161"}, // Mainnet, Base, Arbitrum
+			Enabled:           true,
+		},
 	}
 )
 
@@ -83,7 +89,7 @@ func main() {
 	// Define base endpoint configurations
 	baseEndpoints := []BaseEndpoint{
 		{
-			Name:                  "Mainet-Boosted",
+			Name:                  "Mainet-Boosted(GHO/USDC)",
 			Network:               "1",
 			TokenIn:               "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
 			TokenOut:              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
@@ -97,7 +103,7 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Mainet-Boosted-StableSurge",
+			Name:                  "Mainet-Boosted-StableSurge(wstETH/tETH)",
 			Network:               "1",
 			TokenIn:               "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", // wstETH
 			TokenOut:              "0xd11c452fc99cf405034ee446803b6f6c1f6d5ed8", // tETH
@@ -111,7 +117,7 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Base-Boosted-wstETH/ezETH",
+			Name:                  "Base-Boosted(wstETH/ezETH)",
 			Network:               "8453",
 			TokenIn:               "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452", // wstETH
 			TokenOut:              "0x2416092f143378750bb29b79eD961ab195CcEea5", // ezETH
@@ -125,7 +131,7 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Base-Boosted-StableSurge",
+			Name:                  "Base-Boosted-StableSurge(GHO/USDC)",
 			Network:               "8453",
 			TokenIn:               "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
 			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
@@ -133,20 +139,6 @@ func main() {
 			TokenOutDecimals:      6,
 			ExpectedPool:          "0x7ab124ec4029316c2a42f713828ddf2a192b36db",
 			SwapAmount:            "1000000000000000000000000",
-			CheckInterval:         10,
-			NotificationType:      "email",
-			NotificationRecipient: "test@example.com",
-			ExpectedNoHops:        1,
-		},
-		{
-			Name:                  "Base-Boosted-StableSurge-WETH/USDC",
-			Network:               "8453",
-			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0xcb80b1a9e7b319a4c5ec6b0666967ca1e309e40f",
-			SwapAmount:            "1000000000000000000",
 			CheckInterval:         10,
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
