@@ -61,25 +61,25 @@ var (
 		{
 			Name:              "Paraswap",
 			Type:              "paraswap",
-			SupportedNetworks: []string{"1", "8453", "42161", "100"}, // Mainnet, Base, Arbitrum, Gnosis
+			SupportedNetworks: []string{"1", "8453", "42161", "100", "43114"}, // Mainnet, Base, Arbitrum, Gnosis, Avalanche
 			Enabled:           true,
 		},
 		{
 			Name:              "1inch",
 			Type:              "1inch",
-			SupportedNetworks: []string{"1", "8453", "42161", "100"}, // Mainnet, Base, Arbitrum, Gnosis
+			SupportedNetworks: []string{"1", "8453", "42161", "100", "43114"}, // Mainnet, Base, Arbitrum, Gnosis, Avalanche
 			Enabled:           true,
 		},
 		{
 			Name:              "0x",
 			Type:              "0x",
-			SupportedNetworks: []string{"1", "8453", "42161"}, // Mainnet, Base, Arbitrum
+			SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
 			Enabled:           true,
 		},
 		{
 			Name:              "Odos",
 			Type:              "odos",
-			SupportedNetworks: []string{"1", "8453", "42161"}, // Mainnet, Base, Arbitrum
+			SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
 			Enabled:           true,
 		},
 	}
@@ -195,6 +195,34 @@ func main() {
 			TokenOutDecimals:      18,
 			ExpectedPool:          "0x6e6bb18449fcf15b79efa2cfa70acf7593088029",
 			SwapAmount:            "1000000000000000000",
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
+		{
+			Name:                  "Avax-Boosted-StableSurge(USDT/USDC)",
+			Network:               "43114",
+			TokenIn:               "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7", // USDT
+			TokenOut:              "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // USDC
+			TokenInDecimals:       6,
+			TokenOutDecimals:      6,
+			ExpectedPool:          "0x31ae873544658654ce767bde179fd1bbcb84850b",
+			SwapAmount:            "1000000000000",
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
+		{
+			Name:                  "Avax-Boosted-GyroE(BTC.b/wAVAX)",
+			Network:               "43114",
+			TokenIn:               "0x152b9d0FdC40C096757F570A51E494bd4b943E50", // BTC.b
+			TokenOut:              "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7", // wAVAX
+			TokenInDecimals:       8,
+			TokenOutDecimals:      18,
+			ExpectedPool:          "0x58374fff35d1f3023bbfc646fb9ecd2b180ca0b0",
+			SwapAmount:            "10000000",
 			CheckInterval:         10,
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
