@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -169,6 +170,14 @@ func checkOdosAPI(endpoint *Endpoint) {
 	mu.Lock()
 	defer mu.Unlock()
 
+	// Check if this is a StableSurge endpoint
+	if strings.Contains(endpoint.Name, "StableSurge") {
+		endpoint.LastStatus = "info"
+		endpoint.Message = "Odos StableSurge integration WIP"
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		return
+	}
+
 	endpoint.LastChecked = time.Now()
 
 	// Prepare the request body
@@ -202,6 +211,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to marshal request body: %v", err)
+		sendEmail(fmt.Sprintf("[%s] Failed to marshal request body: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Failed to marshal request body: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
@@ -216,6 +226,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to create request: %v", err)
+		sendEmail(fmt.Sprintf("[%s] Failed to create request: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
@@ -228,6 +239,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Request failed: %v", err)
+		sendEmail(fmt.Sprintf("[%s] Request failed: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
@@ -238,6 +250,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to read response: %v", err)
+		sendEmail(fmt.Sprintf("[%s] Failed to read response: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
@@ -249,6 +262,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Response validation failed: %v", err)
+		sendEmail(fmt.Sprintf("[%s] Response validation failed: %v\nResponse body:\n%s", endpoint.Name, err, string(body)))
 		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
@@ -262,6 +276,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 		if endpoint.Message == "" {
 			endpoint.Message = fmt.Sprintf("Status code: %d, Valid: %v", resp.StatusCode, valid)
 		}
+		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, Valid: %v\nResponse body:\n%s", endpoint.Name, resp.StatusCode, valid, string(body)))
 		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset)
 	}
 }
@@ -271,7 +286,7 @@ func validateOdosResponse(body []byte) (bool, error) {
 	// First try to parse as error response
 	var errorResponse OdosErrorResponse
 	if err := json.Unmarshal(body, &errorResponse); err == nil && errorResponse.ErrorCode != 0 {
-		return false, fmt.Errorf("Odos API error: %s (code: %d)", getOdosErrorMessage(errorResponse.ErrorCode), errorResponse.ErrorCode)
+		return false, fmt.Errorf("odos API error: %s (code: %d)", getOdosErrorMessage(errorResponse.ErrorCode), errorResponse.ErrorCode)
 	}
 
 	// If not an error response, try to parse as success response
