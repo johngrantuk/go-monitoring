@@ -49,28 +49,35 @@ func getBalancerName(network string) (string, error) {
 
 // Function to check 1inch API status
 func check1inchAPI(endpoint *Endpoint) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	// Check if this is a GyroE endpoint
+	if strings.Contains(endpoint.Name, "GyroE") {
+		endpoint.LastStatus = "info"
+		endpoint.Message = "1inch GyroE integration WIP"
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		return
+	}
+
 	start := "https://api.1inch.dev/swap/v6.0/"
 	from := "/quote?src="
 	to := "&dst="
 	amount := "&amount="
 	balancerName, err := getBalancerName(endpoint.Network)
 	if err != nil {
-		mu.Lock()
 		endpoint.LastStatus = "error"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = fmt.Sprintf("Error getting 1inch balancer name: %v", err)
-		mu.Unlock()
 		fmt.Printf("%s[ERROR]%s %s: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
 
 	apiKey := os.Getenv("INCH_API_KEY")
 	if apiKey == "" {
-		mu.Lock()
 		endpoint.LastStatus = "error"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = "INCH_API_KEY environment variable is not set"
-		mu.Unlock()
 		fmt.Printf("%s[ERROR]%s %s: INCH_API_KEY environment variable is not set\n", colorRed, colorReset, endpoint.Name)
 		return
 	}
@@ -93,20 +100,15 @@ func check1inchAPI(endpoint *Endpoint) {
 	client := http.Client{Timeout: 5 * time.Second}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		mu.Lock()
 		endpoint.LastStatus = "down"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = fmt.Sprintf("Failed to create request: %v", err)
-		mu.Unlock()
 		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", colorRed, colorReset, endpoint.Name, err)
 		return
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
-
-	mu.Lock()
-	defer mu.Unlock()
 
 	endpoint.LastChecked = time.Now()
 	if err != nil {
