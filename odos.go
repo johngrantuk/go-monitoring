@@ -196,6 +196,8 @@ func checkOdosAPI(endpoint *Endpoint) {
 		UserAddr:        "0x47E2D28169738039755586743E2dfCF3bd643f86",
 	}
 
+	// fmt.Println(requestBody)
+
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
 		endpoint.LastStatus = "down"
@@ -206,7 +208,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 
 	// Create POST request
