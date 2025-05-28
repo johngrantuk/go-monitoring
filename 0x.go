@@ -132,6 +132,15 @@ func check0xAPI(endpoint *Endpoint) {
 		return
 	}
 
+	// Check if fills or tokens are null
+	if result.Route.Fills == nil || result.Route.Tokens == nil {
+		endpoint.LastStatus = "down"
+		endpoint.Message = "No Routes Found"
+		fmt.Printf("%s[ERROR]%s %s: Response contains null fills or tokens\nResponse body:\n%s\n", colorRed, colorReset, endpoint.Name, string(body))
+		sendEmail(fmt.Sprintf("[%s] Response contains null fills or tokens\nResponse body:\n%s", endpoint.Name, string(body)))
+		return
+	}
+
 	// Check if all fills are from Balancer_V3
 	allBalancerV3 := true
 	for _, fill := range result.Route.Fills {

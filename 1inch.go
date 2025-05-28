@@ -192,6 +192,13 @@ func validate1inchResponse(body []byte, expectedPool string) (bool, error) {
 		return false, fmt.Errorf("failed to parse response: %v", err)
 	}
 
+	// Check if protocols is null or empty
+	if response.Protocols == nil {
+		// prettyJSON, _ := json.MarshalIndent(response, "", "    ")
+		// fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+		return false, fmt.Errorf("1inch network support WIP")
+	}
+
 	// Check if we have any protocols
 	if len(response.Protocols) == 0 || len(response.Protocols[0]) == 0 || len(response.Protocols[0][0]) == 0 {
 		prettyJSON, _ := json.MarshalIndent(response, "", "    ")
