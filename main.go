@@ -228,6 +228,20 @@ func main() {
 			NotificationRecipient: "test@example.com",
 			ExpectedNoHops:        1,
 		},
+		{
+			Name:                  "Mainnet-Quant-BTF(PAXG/WBTC)",
+			Network:               "1",
+			TokenIn:               "0x45804880de22913dafe09f4980848ece6ecbaf78", // PAXG
+			TokenOut:              "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // WBTC
+			TokenInDecimals:       18,
+			TokenOutDecimals:      8,
+			ExpectedPool:          "0x6b61d8680c4f9e560c8306807908553f95c749c5",
+			SwapAmount:            "100000000000000000",
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
 	}
 
 	// Generate endpoints by combining base configurations with route solvers
