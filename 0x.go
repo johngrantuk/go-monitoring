@@ -28,7 +28,7 @@ type ZeroXResponse struct {
 func get0xIgnoreList(network string) (string, error) {
 	switch network {
 	case "42161": // Arbitrum
-		return "0x_RFQ,Angle,Balancer_V2,Camelot_V2,Camelot_V3,Curve,DODO_V2,Fluid,GMX_V1,Integral,MIMSwap,Maverick_V2,PancakeSwap_V2,PancakeSwap_V3,Ramses,Ramses_V2,Solidly_V3,SushiSwap,Swapr,Synapse,TraderJoe_V2.1,TraderJoe_V2.2,Uniswap_V2,Uniswap_V3,Uniswap_V4,WOOFi_V2,Wrapped_USDM", nil
+		return "ArbSwap,DeltaSwap,Swaap_V2,SpartaDex,0x_RFQ,Angle,Balancer_V2,Camelot_V2,Camelot_V3,Curve,DODO_V2,Fluid,GMX_V1,Integral,MIMSwap,Maverick_V2,PancakeSwap_V2,PancakeSwap_V3,Ramses,Ramses_V2,Solidly_V3,SushiSwap,Swapr,Synapse,TraderJoe_V2.1,TraderJoe_V2.2,Uniswap_V2,Uniswap_V3,Uniswap_V4,WOOFi_V2,Wrapped_USDM", nil
 	case "8453": // Base
 		return "0x_RFQ,Aerodrome_V2,Aerodrome_V3,AlienBase_Stable,AlienBase_V2,AlienBase_V3,Angle,Balancer_V2,BaseSwap,BaseX,Clober_V2,Curve,DackieSwap_V2,DackieSwap_V3,DeltaSwap,Equalizer,Infusion,IziSwap,Kim_V4,Kinetix,Maverick,Maverick_V2,Morphex,Overnight,PancakeSwap_V2,PancakeSwap_V3,Pinto,RocketSwap,SharkSwap_V2,SoSwap,Solidly_V3,Spark_PSM,SushiSwap,SushiSwap_V3,Swaap_V2,SwapBased_V3,Synapse,Synthswap_V2,Synthswap_V3,Thick,Treble,Treble_V2,Uniswap_V2,Uniswap_V3,Uniswap_V4,WOOFi_V2,Wrapped_BLT,Wrapped_USDM", nil
 	case "1": // Ethereum Mainnet

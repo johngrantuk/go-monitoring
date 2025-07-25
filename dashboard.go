@@ -54,6 +54,8 @@ func getNetworkName(network string) string {
 		return "arbitrum"
 	case "100":
 		return "gnosis"
+	case "43114":
+		return "avalanche"
 	default:
 		return network
 	}
