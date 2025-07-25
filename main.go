@@ -173,13 +173,13 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Arbitrum-Boosted-GyroE(eBTC/USDC)",
+			Name:                  "Arbitrum-Boosted-GyroE(eBTC/WETH)",
 			Network:               "42161",
 			TokenIn:               "0x657e8C867D8B37dCC18fA4Caead9C45EB088C642", // eBTC
-			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
+			TokenOut:              "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH
 			TokenInDecimals:       8,
-			TokenOutDecimals:      6,
-			ExpectedPool:          "0xa0e5e7728e026bde02810d255a6b94a9aa47b5f9",
+			TokenOutDecimals:      18,
+			ExpectedPool:          "0xc6ac6abae59d58213800ace88d44526725d75f3a",
 			ExpectedNoHops:        1,
 			SwapAmount:            "1000000",
 			CheckInterval:         10,
