@@ -68,6 +68,14 @@ func check1inchAPI(endpoint *Endpoint) {
 		return
 	}
 
+	// Check if this is a reCLAMM endpoint
+	if strings.Contains(endpoint.Name, "reCLAMM") {
+		endpoint.LastStatus = "info"
+		endpoint.Message = "1inch reCLAMM integration WIP"
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		return
+	}
+
 	// Check if this is an Avalanche endpoint
 	if endpoint.Network == "43114" {
 		endpoint.LastStatus = "info"

@@ -242,6 +242,34 @@ func main() {
 			NotificationRecipient: "test@example.com",
 			ExpectedNoHops:        1,
 		},
+		{
+			Name:                  "Base-reCLAMM-(WETH/COW)",
+			Network:               "8453",
+			TokenIn:               "0x4200000000000000000000000000000000000006", // WETH
+			TokenOut:              "0xc694a91e6b071bf030a18bd3053a7fe09b6dae69", // COW
+			TokenInDecimals:       18,
+			TokenOutDecimals:      18,
+			ExpectedPool:          "0xff028c1ec4559d3aa2b0859aa582925b5cc28069",
+			SwapAmount:            "1000000000000000000", // 1 WETH
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
+		{
+			Name:                  "Mainnet-Boosted-reCLAMM-(WETH/AAVE)",
+			Network:               "1",
+			TokenIn:               "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
+			TokenOut:              "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9", // AAVE
+			TokenInDecimals:       18,
+			TokenOutDecimals:      18,
+			ExpectedPool:          "0x6cc9ef68864cd4c2af5a40ffb027c4b5428674a1",
+			SwapAmount:            "3000000000000000000", // 3 WETH
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
 	}
 
 	// Generate endpoints by combining base configurations with route solvers

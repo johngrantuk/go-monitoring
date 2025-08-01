@@ -208,7 +208,7 @@ func checkOdosAPI(endpoint *Endpoint) {
 				TokenAddress: endpoint.TokenOut,
 			},
 		},
-		SourceWhitelist: []string{"Balancer V3 Gyro", "Balancer V3 Stable", "Balancer V3 Weighted"},
+		SourceWhitelist: []string{"Balancer V3 Gyro", "Balancer V3 Stable", "Balancer V3 Weighted", "Balancer V3 StableSurge", "Balancer V3 reCLAMM"},
 		UserAddr:        "0x47E2D28169738039755586743E2dfCF3bd643f86",
 	}
 
