@@ -133,12 +133,12 @@ func main() {
 		{
 			Name:                  "Base-Boosted-StableSurge(GHO/USDC)",
 			Network:               "8453",
-			TokenIn:               "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
-			TokenOut:              "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
+			TokenIn:               "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
+			TokenOut:              "0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee", // GHO
+			TokenInDecimals:       6,
+			TokenOutDecimals:      18,
 			ExpectedPool:          "0x7ab124ec4029316c2a42f713828ddf2a192b36db",
-			SwapAmount:            "1000000000000000000000000",
+			SwapAmount:            "100000000000", // 100000
 			CheckInterval:         10,
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
@@ -161,12 +161,12 @@ func main() {
 		{
 			Name:                  "Arbitrum-Boosted-StableSurge(GHO/USDC)",
 			Network:               "42161",
-			TokenIn:               "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", // GHO
-			TokenOut:              "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
-			TokenInDecimals:       18,
-			TokenOutDecimals:      6,
+			TokenIn:               "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // USDC
+			TokenOut:              "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33", // GHO
+			TokenInDecimals:       6,
+			TokenOutDecimals:      18,
 			ExpectedPool:          "0x19b001e6bc2d89154c18e2216eec5c8c6047b6d8",
-			SwapAmount:            "1000000000000000000000000",
+			SwapAmount:            "100000000000", // 100000
 			CheckInterval:         10,
 			NotificationType:      "email",
 			NotificationRecipient: "test@example.com",
