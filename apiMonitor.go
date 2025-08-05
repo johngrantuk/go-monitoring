@@ -31,6 +31,8 @@ func checkAPI(endpoint *Endpoint) {
 		check0xAPI(endpoint)
 	case "odos":
 		checkOdosAPI(endpoint)
+	case "kyberswap":
+		checkKyberSwapAPI(endpoint)
 	default:
 		checkUnsupportedAPI(endpoint)
 	}

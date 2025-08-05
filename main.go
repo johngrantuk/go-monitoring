@@ -82,6 +82,12 @@ var (
 			SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
 			Enabled:           true,
 		},
+		{
+			Name:              "KyberSwap",
+			Type:              "kyberswap",
+			SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
+			Enabled:           true,
+		},
 	}
 )
 
@@ -89,7 +95,7 @@ func main() {
 	// Define base endpoint configurations
 	baseEndpoints := []BaseEndpoint{
 		{
-			Name:                  "Mainet-Boosted(GHO/USDC)",
+			Name:                  "Mainet-Boosted-Stable(GHO/USDC)",
 			Network:               "1",
 			TokenIn:               "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
 			TokenOut:              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
@@ -117,7 +123,7 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Base-Boosted(wstETH/ezETH)",
+			Name:                  "Base-Boosted-Stable(wstETH/ezETH)",
 			Network:               "8453",
 			TokenIn:               "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452", // wstETH
 			TokenOut:              "0x2416092f143378750bb29b79eD961ab195CcEea5", // ezETH
@@ -145,7 +151,7 @@ func main() {
 			ExpectedNoHops:        1,
 		},
 		{
-			Name:                  "Arbitrum-Boosted(WETH/WSTETH)",
+			Name:                  "Arbitrum-Boosted-Stable(WETH/WSTETH)",
 			Network:               "42161",
 			TokenIn:               "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", // WETH
 			TokenOut:              "0x5979D7b546E38E414F7E9822514be443A4800529", // WSTETH
@@ -187,7 +193,7 @@ func main() {
 			NotificationRecipient: "test@example.com",
 		},
 		{
-			Name:                  "Gnosis-Boosted",
+			Name:                  "Gnosis-Boosted-Stable(WETH/wstETH)",
 			Network:               "100",
 			TokenIn:               "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1", // WETH
 			TokenOut:              "0x6c76971f98945ae98dd7d4dfca8711ebea946ea6", // wstETH
