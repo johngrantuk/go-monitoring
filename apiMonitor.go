@@ -55,16 +55,28 @@ func monitorAPIs(endpoints []Endpoint) {
 	// Perform initial checks immediately
 	for i := range endpoints {
 		checkAPI(&endpoints[i])
-		// Add 5 second delay between each endpoint check
-		time.Sleep(2 * time.Second)
+		// Add delay between each endpoint check based on route solver
+		delay := getDelayForRouteSolver(endpoints[i].RouteSolver)
+		time.Sleep(delay)
 	}
 
 	// Check all endpoints when ticker triggers
 	for range ticker.C {
 		for i := range endpoints {
 			checkAPI(&endpoints[i])
-			// Add 5 second delay between each endpoint check
-			time.Sleep(1 * time.Second)
+			// Add delay between each endpoint check based on route solver
+			delay := getDelayForRouteSolver(endpoints[i].RouteSolver)
+			time.Sleep(delay)
 		}
+	}
+}
+
+// getDelayForRouteSolver returns the appropriate delay for each route solver
+func getDelayForRouteSolver(routeSolver string) time.Duration {
+	switch routeSolver {
+	case "kyberswap":
+		return 60 * time.Second // Longer delay for Kyber endpoints
+	default:
+		return 1 * time.Second // Default delay for other endpoints
 	}
 }
