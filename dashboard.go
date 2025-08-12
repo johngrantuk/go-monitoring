@@ -56,6 +56,8 @@ func getNetworkName(network string) string {
 		return "gnosis"
 	case "43114":
 		return "avalanche"
+	case "999":
+		return "hyperevm"
 	default:
 		return network
 	}

@@ -276,6 +276,20 @@ func main() {
 			NotificationRecipient: "test@example.com",
 			ExpectedNoHops:        1,
 		},
+		{
+			Name:                  "Hyper-Boosted-StableSurge-(USDT/USR)",
+			Network:               "999",
+			TokenIn:               "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb", // USDT
+			TokenOut:              "0x0ad339d66bf4aed5ce31c64bc37b3244b6394a77", // USR
+			TokenInDecimals:       6,
+			TokenOutDecimals:      18,
+			ExpectedPool:          "0x8207c7541ce31b38dbd46890f2a832cf1ef7c512",
+			SwapAmount:            "100000000000", // 100k USDT
+			CheckInterval:         10,
+			NotificationType:      "email",
+			NotificationRecipient: "test@example.com",
+			ExpectedNoHops:        1,
+		},
 	}
 
 	// Generate endpoints by combining base configurations with route solvers
