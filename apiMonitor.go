@@ -33,6 +33,8 @@ func checkAPI(endpoint *Endpoint) {
 		checkOdosAPI(endpoint)
 	case "kyberswap":
 		checkKyberSwapAPI(endpoint)
+	case "hyperbloom":
+		checkHyperBloomAPI(endpoint)
 	default:
 		checkUnsupportedAPI(endpoint)
 	}
@@ -76,6 +78,8 @@ func getDelayForRouteSolver(routeSolver string) time.Duration {
 	switch routeSolver {
 	case "kyberswap":
 		return 60 * time.Second // Longer delay for Kyber endpoints
+	case "hyperbloom":
+		return 30 * time.Second // Medium delay for HyperBloom endpoints
 	default:
 		return 1 * time.Second // Default delay for other endpoints
 	}
