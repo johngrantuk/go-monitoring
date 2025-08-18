@@ -77,7 +77,7 @@ func monitorAPIs(endpoints []Endpoint) {
 func getDelayForRouteSolver(routeSolver string) time.Duration {
 	switch routeSolver {
 	case "kyberswap":
-		return 60 * time.Second // Longer delay for Kyber endpoints
+		return 120 * time.Second // Longer delay for Kyber endpoints
 	case "hyperbloom":
 		return 30 * time.Second // Medium delay for HyperBloom endpoints
 	default:
