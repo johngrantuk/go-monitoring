@@ -6,9 +6,6 @@ import (
 )
 
 // Global flags to enable/disable specific API checks
-var (
-	enableEmailSending = true
-)
 
 // Function to handle unsupported route solvers
 func checkUnsupportedAPI(endpoint *Endpoint) {
