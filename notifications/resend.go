@@ -1,4 +1,4 @@
-package main
+package notifications
 
 import (
 	"crypto/tls"
@@ -11,7 +11,7 @@ import (
 	"github.com/resend/resend-go/v2"
 )
 
-func sendEmail(message string) {
+func SendEmail(message string) {
 	// Check if email sending is enabled
 	if !config.EnableEmailSending {
 		fmt.Printf("%s[INFO]%s: Email sending is disabled\n", config.ColorYellow, config.ColorReset)

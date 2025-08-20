@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"go-monitoring/notifications"
 )
 
 // BaseEndpoint represents the common configuration for an endpoint
@@ -344,7 +346,7 @@ func main() {
 	}
 
 	go monitorAPIs(endpoints) // Start monitoring in the background
-	sendEmail("Service starting")
+	notifications.SendEmail("Service starting")
 	http.HandleFunc("/", dashboardHandler)
 	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", nil)

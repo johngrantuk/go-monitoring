@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/notifications"
 )
 
 // KyberSwapQuoteRequest represents the request parameters for the KyberSwap quote endpoint
@@ -134,7 +135,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to create request: %v", err)
-		sendEmail(fmt.Sprintf("[%s] Failed to create request: %v", endpoint.Name, err))
+		notifications.SendEmail(fmt.Sprintf("[%s] Failed to create request: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
@@ -171,7 +172,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Request failed: %v", err)
-		sendEmail(fmt.Sprintf("[%s] Request failed: %v", endpoint.Name, err))
+		notifications.SendEmail(fmt.Sprintf("[%s] Request failed: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
@@ -182,7 +183,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to read response: %v", err)
-		sendEmail(fmt.Sprintf("[%s] Failed to read response: %v", endpoint.Name, err))
+		notifications.SendEmail(fmt.Sprintf("[%s] Failed to read response: %v", endpoint.Name, err))
 		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
@@ -192,7 +193,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Response validation failed: %v", err)
-		sendEmail(fmt.Sprintf("[%s] Response validation failed: %v\nResponse body:\n%s", endpoint.Name, err, string(body)))
+		notifications.SendEmail(fmt.Sprintf("[%s] Response validation failed: %v\nResponse body:\n%s", endpoint.Name, err, string(body)))
 		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
@@ -206,7 +207,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 		if endpoint.Message == "" {
 			endpoint.Message = fmt.Sprintf("Status code: %d, Valid: %v", resp.StatusCode, valid)
 		}
-		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, Valid: %v\nResponse body:\n%s", endpoint.Name, resp.StatusCode, valid, string(body)))
+		notifications.SendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, Valid: %v\nResponse body:\n%s", endpoint.Name, resp.StatusCode, valid, string(body)))
 		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", config.ColorRed, config.ColorReset, endpoint.Name, config.ColorRed, endpoint.LastStatus, config.ColorReset)
 	}
 }
