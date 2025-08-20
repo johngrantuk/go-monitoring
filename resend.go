@@ -6,20 +6,22 @@ import (
 	"net/http"
 	"os"
 
+	"go-monitoring/config"
+
 	"github.com/resend/resend-go/v2"
 )
 
 func sendEmail(message string) {
 	// Check if email sending is enabled
 	if !enableEmailSending {
-		fmt.Printf("%s[INFO]%s: Email sending is disabled\n", colorYellow, colorReset)
+		fmt.Printf("%s[INFO]%s: Email sending is disabled\n", config.ColorYellow, config.ColorReset)
 		return
 	}
 
 	// Get API key from environment variable
 	apiKey := os.Getenv("RESEND_API_KEY")
 	if apiKey == "" {
-		fmt.Printf("%s[ERROR]%s: RESEND_API_KEY environment variable not set\n", colorRed, colorReset)
+		fmt.Printf("%s[ERROR]%s: RESEND_API_KEY environment variable not set\n", config.ColorRed, config.ColorReset)
 		return
 	}
 

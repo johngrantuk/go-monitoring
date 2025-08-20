@@ -9,17 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
-)
+	"go-monitoring/config"
 
-// ANSI color codes
-const (
-	colorReset  = "\033[0m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorOrange = "\033[38;5;208m" // Using 256-color code for orange
-	colorBlue   = "\033[34m"
+	"github.com/joho/godotenv"
 )
 
 func init() {
@@ -56,7 +48,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if strings.Contains(endpoint.Name, "GyroE") {
 		endpoint.LastStatus = "info"
 		endpoint.Message = "1inch GyroE integration WIP"
-		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
 		return
 	}
 
@@ -64,7 +56,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if strings.Contains(endpoint.Name, "Quant") {
 		endpoint.LastStatus = "info"
 		endpoint.Message = "1inch QuantAMM integration WIP"
-		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
 		return
 	}
 
@@ -72,7 +64,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if strings.Contains(endpoint.Name, "reCLAMM") {
 		endpoint.LastStatus = "info"
 		endpoint.Message = "1inch reCLAMM integration WIP"
-		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
 		return
 	}
 
@@ -80,7 +72,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if endpoint.Network == "43114" {
 		endpoint.LastStatus = "info"
 		endpoint.Message = "1inch network support WIP"
-		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
 		return
 	}
 
@@ -93,7 +85,7 @@ func check1inchAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "error"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = fmt.Sprintf("Error getting 1inch balancer name: %v", err)
-		fmt.Printf("%s[ERROR]%s %s: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
@@ -102,7 +94,7 @@ func check1inchAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "error"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = "INCH_API_KEY environment variable is not set"
-		fmt.Printf("%s[ERROR]%s %s: INCH_API_KEY environment variable is not set\n", colorRed, colorReset, endpoint.Name)
+		fmt.Printf("%s[ERROR]%s %s: INCH_API_KEY environment variable is not set\n", config.ColorRed, config.ColorReset, endpoint.Name)
 		return
 	}
 
@@ -127,7 +119,7 @@ func check1inchAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = fmt.Sprintf("Failed to create request: %v", err)
-		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
@@ -138,7 +130,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Request failed: %v", err)
-		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -148,7 +140,7 @@ func check1inchAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to read response: %v", err)
-		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
@@ -159,20 +151,20 @@ func check1inchAPI(endpoint *Endpoint) {
 	if err != nil {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Response validation failed: %v", err)
-		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
 	if resp.StatusCode == http.StatusOK && valid {
 		endpoint.LastStatus = "up"
 		endpoint.Message = "OK"
-		fmt.Printf("%s[SUCCESS]%s %s: API is %s%s%s\n", colorGreen, colorReset, endpoint.Name, colorGreen, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[SUCCESS]%s %s: API is %s%s%s\n", config.ColorGreen, config.ColorReset, endpoint.Name, config.ColorGreen, endpoint.LastStatus, config.ColorReset)
 	} else {
 		endpoint.LastStatus = "down"
 		if endpoint.Message == "" {
 			endpoint.Message = fmt.Sprintf("Status code: %d, Valid: %v", resp.StatusCode, valid)
 		}
-		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", config.ColorRed, config.ColorReset, endpoint.Name, config.ColorRed, endpoint.LastStatus, config.ColorReset)
 	}
 }
 
@@ -194,7 +186,7 @@ func validate1inchResponse(body []byte, expectedPool string) (bool, error) {
 		// If we successfully parsed an error response
 		if errorResponse.Description == "insufficient liquidity" {
 			prettyJSON, _ := json.MarshalIndent(errorResponse, "", "    ")
-			fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+			fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 			return false, fmt.Errorf("insufficient liquidity")
 		}
 	}
@@ -212,21 +204,21 @@ func validate1inchResponse(body []byte, expectedPool string) (bool, error) {
 
 	if err := json.Unmarshal(body, &response); err != nil {
 		prettyJSON, _ := json.MarshalIndent(response, "", "    ")
-		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 		return false, fmt.Errorf("failed to parse response: %v", err)
 	}
 
 	// Check if protocols is null or empty
 	if response.Protocols == nil {
 		// prettyJSON, _ := json.MarshalIndent(response, "", "    ")
-		// fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+		// fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 		return false, fmt.Errorf("1inch network support WIP")
 	}
 
 	// Check if we have any protocols
 	if len(response.Protocols) == 0 || len(response.Protocols[0]) == 0 || len(response.Protocols[0][0]) == 0 {
 		prettyJSON, _ := json.MarshalIndent(response, "", "    ")
-		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 		return false, fmt.Errorf("no protocols found in response")
 	}
 
@@ -235,7 +227,7 @@ func validate1inchResponse(body []byte, expectedPool string) (bool, error) {
 	for _, protocol := range response.Protocols[0][0] {
 		if !strings.Contains(protocol.Name, "BALANCER_V3") {
 			prettyJSON, _ := json.MarshalIndent(response, "", "    ")
-			fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+			fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 			return false, fmt.Errorf("found protocol %s, expected protocol containing BALANCER_V3", protocol.Name)
 		}
 		totalPart += protocol.Part
@@ -244,7 +236,7 @@ func validate1inchResponse(body []byte, expectedPool string) (bool, error) {
 	// Verify that parts sum up to 100
 	if totalPart != 100 {
 		prettyJSON, _ := json.MarshalIndent(response, "", "    ")
-		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", colorRed, colorReset, string(prettyJSON))
+		fmt.Printf("%s[ERROR]%s Failed response body:\n%s\n", config.ColorRed, config.ColorReset, string(prettyJSON))
 		return false, fmt.Errorf("protocol parts sum to %d, expected 100", totalPart)
 	}
 

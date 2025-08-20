@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"go-monitoring/config"
 )
 
 // KyberSwapQuoteRequest represents the request parameters for the KyberSwap quote endpoint
@@ -110,7 +112,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	if strings.Contains(endpoint.Name, "reCLAMM") {
 		endpoint.LastStatus = "info"
 		endpoint.Message = "KyberSwap reCLAMM integration WIP"
-		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", colorYellow, colorReset, endpoint.Name, colorOrange, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
 		return
 	}
 
@@ -133,7 +135,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to create request: %v", err)
 		sendEmail(fmt.Sprintf("[%s] Failed to create request: %v", endpoint.Name, err))
-		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Failed to create request: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
@@ -149,7 +151,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 	default:
 		endpoint.LastStatus = "down"
 		endpoint.Message = "unsupported pool type"
-		fmt.Printf("%s[ERROR]%s %s: %s\n", colorRed, colorReset, endpoint.Name, endpoint.Message)
+		fmt.Printf("%s[ERROR]%s %s: %s\n", config.ColorRed, config.ColorReset, endpoint.Name, endpoint.Message)
 		return
 	}
 
@@ -170,7 +172,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Request failed: %v", err)
 		sendEmail(fmt.Sprintf("[%s] Request failed: %v", endpoint.Name, err))
-		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Request failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -181,7 +183,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Failed to read response: %v", err)
 		sendEmail(fmt.Sprintf("[%s] Failed to read response: %v", endpoint.Name, err))
-		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Failed to read response: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
@@ -191,21 +193,21 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 		endpoint.LastStatus = "down"
 		endpoint.Message = fmt.Sprintf("Response validation failed: %v", err)
 		sendEmail(fmt.Sprintf("[%s] Response validation failed: %v\nResponse body:\n%s", endpoint.Name, err, string(body)))
-		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", colorRed, colorReset, endpoint.Name, err)
+		fmt.Printf("%s[ERROR]%s %s: Response validation failed: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		return
 	}
 
 	if resp.StatusCode == http.StatusOK && valid {
 		endpoint.LastStatus = "up"
 		endpoint.Message = "OK"
-		fmt.Printf("%s[SUCCESS]%s %s: API is %s%s%s\n", colorGreen, colorReset, endpoint.Name, colorGreen, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[SUCCESS]%s %s: API is %s%s%s\n", config.ColorGreen, config.ColorReset, endpoint.Name, config.ColorGreen, endpoint.LastStatus, config.ColorReset)
 	} else {
 		endpoint.LastStatus = "down"
 		if endpoint.Message == "" {
 			endpoint.Message = fmt.Sprintf("Status code: %d, Valid: %v", resp.StatusCode, valid)
 		}
 		sendEmail(fmt.Sprintf("[%s] API check failed - Status code: %d, Valid: %v\nResponse body:\n%s", endpoint.Name, resp.StatusCode, valid, string(body)))
-		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", colorRed, colorReset, endpoint.Name, colorRed, endpoint.LastStatus, colorReset)
+		fmt.Printf("%s[FAILURE]%s %s: API is %s%s%s\n", config.ColorRed, config.ColorReset, endpoint.Name, config.ColorRed, endpoint.LastStatus, config.ColorReset)
 	}
 }
 
