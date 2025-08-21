@@ -59,20 +59,7 @@ func CheckAllEndpoints() {
 		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
 			CheckAPI(endpoint)
 		})
-		// Add delay between each endpoint check based on route solver
-		delay := getDelayForRouteSolver(endpoint.RouteSolver)
-		time.Sleep(delay)
-	}
-}
-
-// getDelayForRouteSolver returns the appropriate delay for each route solver
-func getDelayForRouteSolver(routeSolver string) time.Duration {
-	switch routeSolver {
-	case "kyberswap":
-		return 120 * time.Second // Longer delay for Kyber endpoints
-	case "hyperbloom":
-		return 30 * time.Second // Medium delay for HyperBloom endpoints
-	default:
-		return 1 * time.Second // Default delay for other endpoints
+		// Add delay between each endpoint check based on endpoint's configured delay
+		time.Sleep(endpoint.Delay)
 	}
 }

@@ -69,6 +69,7 @@ func main() {
 				SwapAmount:       base.SwapAmount,
 				ExpectedPool:     base.ExpectedPool,
 				ExpectedNoHops:   base.ExpectedNoHops,
+				Delay:            config.GetRouteSolverDelay(solver.Type),
 				LastStatus:       "unknown",
 				LastChecked:      time.Time{},
 				Message:          "",

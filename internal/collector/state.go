@@ -19,6 +19,7 @@ type Endpoint struct {
 	SwapAmount       string
 	ExpectedPool     string
 	ExpectedNoHops   int
+	Delay            time.Duration
 	LastStatus       string
 	LastChecked      time.Time
 	Message          string

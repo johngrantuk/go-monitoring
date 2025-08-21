@@ -2,7 +2,9 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // BaseEndpoint represents the common configuration for an endpoint
@@ -267,4 +269,24 @@ func GetEnabledRouteSolvers() []RouteSolver {
 		}
 	}
 	return enabledSolvers
+}
+
+// GetRouteSolverDelay returns the delay for a specific route solver based on environment variables
+// Environment variable format: DELAY_<ROUTESOLVER> (e.g., DELAY_KYBERSWAP, DELAY_HYPERBLOOM)
+// Defaults to 2 seconds if no environment variable is found
+func GetRouteSolverDelay(routeSolver string) time.Duration {
+	envVarName := "DELAY_" + strings.ToUpper(routeSolver)
+	envValue := os.Getenv(envVarName)
+
+	if envValue == "" {
+		return 2 * time.Second // Default to 2 seconds
+	}
+
+	// Try to parse as seconds (integer)
+	if seconds, err := strconv.Atoi(envValue); err == nil && seconds >= 0 {
+		return time.Duration(seconds) * time.Second
+	}
+
+	// If parsing fails, return default
+	return 2 * time.Second
 }
