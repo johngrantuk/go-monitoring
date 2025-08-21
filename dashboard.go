@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sort"
 	"time"
+
+	"go-monitoring/internal/collector"
 )
 
 // formatTimeAgo returns a human-readable time format
@@ -72,23 +74,15 @@ func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	name := r.URL.Path[len("/check/"):]
 
-	mu.Lock()
-	var targetEndpoint *Endpoint
-	for i := range endpoints {
-		if endpoints[i].Name == name {
-			targetEndpoint = &endpoints[i]
-			break
-		}
-	}
-	mu.Unlock()
+	// Use the collector to update the endpoint directly
+	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
+		checkAPI(endpoint)
+	})
 
-	if targetEndpoint == nil {
+	if !updated {
 		http.Error(w, "Endpoint not found", http.StatusNotFound)
 		return
 	}
-
-	// Trigger the check
-	checkAPI(targetEndpoint)
 
 	// Redirect back to the dashboard
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -96,11 +90,11 @@ func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handler
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
+	// Get a copy of endpoints from the collector
+	endpoints := collector.GetEndpointsCopy()
 
 	// Group endpoints by BaseName
-	endpointGroups := make(map[string][]Endpoint)
+	endpointGroups := make(map[string][]collector.Endpoint)
 	for _, endpoint := range endpoints {
 		endpointGroups[endpoint.BaseName] = append(endpointGroups[endpoint.BaseName], endpoint)
 	}

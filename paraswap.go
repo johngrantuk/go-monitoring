@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
 )
 
@@ -46,16 +47,14 @@ type ParaswapResponse struct {
 }
 
 // Function to check Paraswap API status
-func checkParaswapAPI(endpoint *Endpoint) {
+func checkParaswapAPI(endpoint *collector.Endpoint) {
 	start := "https://api.paraswap.io/prices/?version=6.2"
 	end := "&otherExchangePrices=true&partner=paraswap.io&userAddress=0x0000000000000000000000000000000000000000&ignoreBadUsdPrice=true"
 	ignoreList, err := getIgnoreList(endpoint.Network)
 	if err != nil {
-		mu.Lock()
 		endpoint.LastStatus = "error"
 		endpoint.LastChecked = time.Now()
 		endpoint.Message = fmt.Sprintf("Error getting ignore list: %v", err)
-		mu.Unlock()
 		fmt.Printf("%s[ERROR]%s %s: %v\n", config.ColorRed, config.ColorReset, endpoint.Name, err)
 		notifications.SendEmail(fmt.Sprintf("[%s] Error getting ignore list: %v", endpoint.Name, err))
 		return
@@ -70,9 +69,6 @@ func checkParaswapAPI(endpoint *Endpoint) {
 	}
 	client := http.Client{Timeout: 5 * time.Second, Transport: tr}
 	resp, err := client.Get(url)
-
-	mu.Lock()
-	defer mu.Unlock()
 
 	endpoint.LastChecked = time.Now()
 	if err != nil {

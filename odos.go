@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
 )
 
@@ -169,9 +170,7 @@ func getOdosErrorMessage(code int) string {
 }
 
 // Function to check Odos API status
-func checkOdosAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
+func checkOdosAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a Quant endpoint
 	if strings.Contains(endpoint.Name, "Quant") {

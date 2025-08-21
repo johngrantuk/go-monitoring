@@ -3,43 +3,16 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
-)
-
-// Endpoint represents a monitored API endpoint
-type Endpoint struct {
-	Name                  string
-	BaseName              string
-	SolverName            string
-	RouteSolver           string
-	Network               string
-	TokenIn               string
-	TokenOut              string
-	TokenInDecimals       int
-	TokenOutDecimals      int
-	SwapAmount            string
-	ExpectedPool          string
-	ExpectedNoHops        int
-	CheckInterval         int
-	LastStatus            string
-	LastChecked           time.Time
-	NotificationType      string
-	NotificationRecipient string
-	Message               string
-}
-
-// API monitoring data
-var (
-	endpoints = make([]Endpoint, 0)
-	mu        sync.Mutex // Prevents race conditions
 )
 
 func main() {
 	// Generate endpoints by combining base configurations with route solvers
+	var generatedEndpoints []collector.Endpoint
 	for _, base := range config.BaseEndpoints {
 		for _, solver := range config.RouteSolvers {
 			// Skip disabled solvers
@@ -60,7 +33,7 @@ func main() {
 				continue // Skip unsupported network combinations
 			}
 
-			endpoint := Endpoint{
+			endpoint := collector.Endpoint{
 				Name:                  fmt.Sprintf("%s-%s", solver.Name, base.Name),
 				BaseName:              base.Name,
 				SolverName:            solver.Name,
@@ -80,11 +53,14 @@ func main() {
 				NotificationRecipient: base.NotificationRecipient,
 				Message:               "",
 			}
-			endpoints = append(endpoints, endpoint)
+			generatedEndpoints = append(generatedEndpoints, endpoint)
 		}
 	}
 
-	go monitorAPIs(endpoints) // Start monitoring in the background
+	// Initialize the collector with the generated endpoints
+	collector.SetEndpoints(generatedEndpoints)
+
+	go monitorAPIs() // Start monitoring in the background
 	notifications.SendEmail("Service starting")
 	http.HandleFunc("/", dashboardHandler)
 	fmt.Println("Server running on http://localhost:8080")

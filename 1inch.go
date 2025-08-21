@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 
 	"github.com/joho/godotenv"
 )
@@ -40,9 +41,7 @@ func getBalancerName(network string) (string, error) {
 }
 
 // Function to check 1inch API status
-func check1inchAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
+func check1inchAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a GyroE endpoint
 	if strings.Contains(endpoint.Name, "GyroE") {

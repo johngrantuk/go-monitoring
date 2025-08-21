@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
 )
 
@@ -105,9 +106,7 @@ func getChainName(chainID string) string {
 }
 
 // Function to check KyberSwap API status
-func checkKyberSwapAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
+func checkKyberSwapAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a Quant endpoint
 	if strings.Contains(endpoint.Name, "reCLAMM") {
@@ -213,7 +212,7 @@ func checkKyberSwapAPI(endpoint *Endpoint) {
 }
 
 // validateKyberSwapResponse checks if the API response meets the monitoring requirements
-func validateKyberSwapResponse(body []byte, endpoint *Endpoint) (bool, error) {
+func validateKyberSwapResponse(body []byte, endpoint *collector.Endpoint) (bool, error) {
 	// Try to parse as KyberSwap response (both success and error use same structure)
 	var response KyberSwapQuoteResponse
 	if err := json.Unmarshal(body, &response); err != nil {

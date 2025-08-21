@@ -3,22 +3,19 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"go-monitoring/internal/collector"
 )
 
-// Global flags to enable/disable specific API checks
-
 // Function to handle unsupported route solvers
-func checkUnsupportedAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
-
+func checkUnsupportedAPI(endpoint *collector.Endpoint) {
 	endpoint.LastChecked = time.Now()
 	endpoint.LastStatus = "unsupported"
 	fmt.Printf("Unsupported route solver '%s' for endpoint %s\n", endpoint.RouteSolver, endpoint.Name)
 }
 
 // Function to check API status based on route solver
-func checkAPI(endpoint *Endpoint) {
+func checkAPI(endpoint *collector.Endpoint) {
 	switch endpoint.RouteSolver {
 	case "paraswap":
 		checkParaswapAPI(endpoint)
@@ -38,35 +35,43 @@ func checkAPI(endpoint *Endpoint) {
 }
 
 // Function to periodically check API status
-func monitorAPIs(endpoints []Endpoint) {
-	// Create a single ticker for all endpoints
-	// Use the minimum check interval from all endpoints
-	minInterval := endpoints[0].CheckInterval
-	for _, endpoint := range endpoints {
-		if endpoint.CheckInterval < minInterval {
-			minInterval = endpoint.CheckInterval
+func monitorAPIs() {
+	// Get the minimum check interval and create ticker outside the lock
+	var minInterval int
+	collector.WithEndpointsLock(func(endpoints []collector.Endpoint) {
+		minInterval = endpoints[0].CheckInterval
+		for _, endpoint := range endpoints {
+			if endpoint.CheckInterval < minInterval {
+				minInterval = endpoint.CheckInterval
+			}
 		}
-	}
+	})
 
 	ticker := time.NewTicker(time.Duration(minInterval) * time.Hour)
 	defer ticker.Stop()
 
 	// Perform initial checks immediately
-	for i := range endpoints {
-		checkAPI(&endpoints[i])
-		// Add delay between each endpoint check based on route solver
-		delay := getDelayForRouteSolver(endpoints[i].RouteSolver)
-		time.Sleep(delay)
-	}
+	checkAllEndpoints()
 
 	// Check all endpoints when ticker triggers
 	for range ticker.C {
-		for i := range endpoints {
-			checkAPI(&endpoints[i])
-			// Add delay between each endpoint check based on route solver
-			delay := getDelayForRouteSolver(endpoints[i].RouteSolver)
-			time.Sleep(delay)
-		}
+		checkAllEndpoints()
+	}
+}
+
+// checkAllEndpoints performs API checks for all endpoints with minimal mutex locking
+func checkAllEndpoints() {
+	// Get a copy of endpoints to iterate over
+	endpoints := collector.GetEndpointsCopy()
+
+	// Do the actual API checks outside the lock
+	for _, endpoint := range endpoints {
+		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
+			checkAPI(endpoint)
+		})
+		// Add delay between each endpoint check based on route solver
+		delay := getDelayForRouteSolver(endpoint.RouteSolver)
+		time.Sleep(delay)
 	}
 }
 

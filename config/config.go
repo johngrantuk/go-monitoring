@@ -255,12 +255,12 @@ var RouteSolvers = []RouteSolver{
 		SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
 		Enabled:           true,
 	},
-	{
-		Name:              "KyberSwap",
-		Type:              "kyberswap",
-		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
-		Enabled:           true,
-	},
+	// {
+	// 	Name:              "KyberSwap",
+	// 	Type:              "kyberswap",
+	// 	SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
+	// 	Enabled:           true,
+	// },
 	{
 		Name:              "HyperBloom",
 		Type:              "hyperbloom",

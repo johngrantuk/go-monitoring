@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
 )
 
@@ -44,10 +45,7 @@ func get0xIgnoreList(network string) (string, error) {
 }
 
 // Function to check 0x API status
-func check0xAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
-
+func check0xAPI(endpoint *collector.Endpoint) {
 	endpoint.LastChecked = time.Now()
 
 	// Get ignore list for the network

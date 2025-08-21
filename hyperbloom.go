@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/internal/collector"
 	"go-monitoring/notifications"
 
 	"github.com/joho/godotenv"
@@ -61,9 +62,7 @@ type HyperBloomQuoteResponse struct {
 }
 
 // Function to check HyperBloom API status
-func checkHyperBloomAPI(endpoint *Endpoint) {
-	mu.Lock()
-	defer mu.Unlock()
+func checkHyperBloomAPI(endpoint *collector.Endpoint) {
 
 	endpoint.LastChecked = time.Now()
 
@@ -152,7 +151,7 @@ func checkHyperBloomAPI(endpoint *Endpoint) {
 }
 
 // validateHyperBloomResponse checks if the API response meets the monitoring requirements
-func validateHyperBloomResponse(body []byte, endpoint *Endpoint) (bool, error) {
+func validateHyperBloomResponse(body []byte, endpoint *collector.Endpoint) (bool, error) {
 	// Try to parse as HyperBloom response
 	var response HyperBloomQuoteResponse
 	if err := json.Unmarshal(body, &response); err != nil {
