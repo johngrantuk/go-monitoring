@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"crypto/tls"
@@ -46,8 +46,8 @@ type ParaswapResponse struct {
 	} `json:"priceRoute"`
 }
 
-// Function to check Paraswap API status
-func checkParaswapAPI(endpoint *collector.Endpoint) {
+// CheckParaswapAPI checks the Paraswap API status
+func CheckParaswapAPI(endpoint *collector.Endpoint) {
 	start := "https://api.paraswap.io/prices/?version=6.2"
 	end := "&otherExchangePrices=true&partner=paraswap.io&userAddress=0x0000000000000000000000000000000000000000&ignoreBadUsdPrice=true"
 	ignoreList, err := getIgnoreList(endpoint.Network)

@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"encoding/json"
@@ -105,8 +105,8 @@ func getChainName(chainID string) string {
 	}
 }
 
-// Function to check KyberSwap API status
-func checkKyberSwapAPI(endpoint *collector.Endpoint) {
+// CheckKyberSwapAPI checks the KyberSwap API status
+func CheckKyberSwapAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a Quant endpoint
 	if strings.Contains(endpoint.Name, "reCLAMM") {

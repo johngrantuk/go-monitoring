@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"encoding/json"
@@ -40,8 +40,8 @@ func getBalancerName(network string) (string, error) {
 	}
 }
 
-// Function to check 1inch API status
-func check1inchAPI(endpoint *collector.Endpoint) {
+// Check1inchAPI checks the 1inch API status
+func Check1inchAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a GyroE endpoint
 	if strings.Contains(endpoint.Name, "GyroE") {

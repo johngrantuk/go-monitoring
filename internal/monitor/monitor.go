@@ -1,41 +1,42 @@
-package main
+package monitor
 
 import (
 	"fmt"
 	"time"
 
 	"go-monitoring/internal/collector"
+	"go-monitoring/providers"
 )
 
-// Function to handle unsupported route solvers
-func checkUnsupportedAPI(endpoint *collector.Endpoint) {
+// CheckUnsupportedAPI handles unsupported route solvers
+func CheckUnsupportedAPI(endpoint *collector.Endpoint) {
 	endpoint.LastChecked = time.Now()
 	endpoint.LastStatus = "unsupported"
 	fmt.Printf("Unsupported route solver '%s' for endpoint %s\n", endpoint.RouteSolver, endpoint.Name)
 }
 
-// Function to check API status based on route solver
-func checkAPI(endpoint *collector.Endpoint) {
+// CheckAPI checks API status based on route solver
+func CheckAPI(endpoint *collector.Endpoint) {
 	switch endpoint.RouteSolver {
 	case "paraswap":
-		checkParaswapAPI(endpoint)
+		providers.CheckParaswapAPI(endpoint)
 	case "1inch":
-		check1inchAPI(endpoint)
+		providers.Check1inchAPI(endpoint)
 	case "0x":
-		check0xAPI(endpoint)
+		providers.Check0xAPI(endpoint)
 	case "odos":
-		checkOdosAPI(endpoint)
+		providers.CheckOdosAPI(endpoint)
 	case "kyberswap":
-		checkKyberSwapAPI(endpoint)
+		providers.CheckKyberSwapAPI(endpoint)
 	case "hyperbloom":
-		checkHyperBloomAPI(endpoint)
+		providers.CheckHyperBloomAPI(endpoint)
 	default:
-		checkUnsupportedAPI(endpoint)
+		CheckUnsupportedAPI(endpoint)
 	}
 }
 
-// Function to periodically check API status
-func monitorAPIs() {
+// MonitorAPIs periodically checks API status
+func MonitorAPIs() {
 	// Get the minimum check interval and create ticker outside the lock
 	var minInterval int
 	collector.WithEndpointsLock(func(endpoints []collector.Endpoint) {
@@ -51,23 +52,23 @@ func monitorAPIs() {
 	defer ticker.Stop()
 
 	// Perform initial checks immediately
-	checkAllEndpoints()
+	CheckAllEndpoints()
 
 	// Check all endpoints when ticker triggers
 	for range ticker.C {
-		checkAllEndpoints()
+		CheckAllEndpoints()
 	}
 }
 
-// checkAllEndpoints performs API checks for all endpoints with minimal mutex locking
-func checkAllEndpoints() {
+// CheckAllEndpoints performs API checks for all endpoints with minimal mutex locking
+func CheckAllEndpoints() {
 	// Get a copy of endpoints to iterate over
 	endpoints := collector.GetEndpointsCopy()
 
 	// Do the actual API checks outside the lock
 	for _, endpoint := range endpoints {
 		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
-			checkAPI(endpoint)
+			CheckAPI(endpoint)
 		})
 		// Add delay between each endpoint check based on route solver
 		delay := getDelayForRouteSolver(endpoint.RouteSolver)

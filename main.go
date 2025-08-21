@@ -7,6 +7,7 @@ import (
 
 	"go-monitoring/config"
 	"go-monitoring/internal/collector"
+	"go-monitoring/internal/monitor"
 	"go-monitoring/notifications"
 )
 
@@ -60,7 +61,7 @@ func main() {
 	// Initialize the collector with the generated endpoints
 	collector.SetEndpoints(generatedEndpoints)
 
-	go monitorAPIs() // Start monitoring in the background
+	go monitor.MonitorAPIs() // Start monitoring in the background
 	notifications.SendEmail("Service starting")
 	http.HandleFunc("/", dashboardHandler)
 	fmt.Println("Server running on http://localhost:8080")

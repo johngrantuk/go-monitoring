@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go-monitoring/internal/collector"
+	"go-monitoring/internal/monitor"
 )
 
 // formatTimeAgo returns a human-readable time format
@@ -76,7 +77,7 @@ func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the collector to update the endpoint directly
 	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
-		checkAPI(endpoint)
+		monitor.CheckAPI(endpoint)
 	})
 
 	if !updated {

@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"encoding/json"
@@ -61,8 +61,8 @@ type HyperBloomQuoteResponse struct {
 	BuyTokenToEthRate     string             `json:"buyTokenToEthRate"`
 }
 
-// Function to check HyperBloom API status
-func checkHyperBloomAPI(endpoint *collector.Endpoint) {
+// CheckHyperBloomAPI checks the HyperBloom API status
+func CheckHyperBloomAPI(endpoint *collector.Endpoint) {
 
 	endpoint.LastChecked = time.Now()
 

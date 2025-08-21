@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"crypto/tls"
@@ -44,8 +44,8 @@ func get0xIgnoreList(network string) (string, error) {
 	}
 }
 
-// Function to check 0x API status
-func check0xAPI(endpoint *collector.Endpoint) {
+// Check0xAPI checks the 0x API status
+func Check0xAPI(endpoint *collector.Endpoint) {
 	endpoint.LastChecked = time.Now()
 
 	// Get ignore list for the network

@@ -1,4 +1,4 @@
-package main
+package providers
 
 import (
 	"bytes"
@@ -169,8 +169,8 @@ func getOdosErrorMessage(code int) string {
 	}
 }
 
-// Function to check Odos API status
-func checkOdosAPI(endpoint *collector.Endpoint) {
+// CheckOdosAPI checks the Odos API status
+func CheckOdosAPI(endpoint *collector.Endpoint) {
 
 	// Check if this is a Quant endpoint
 	if strings.Contains(endpoint.Name, "Quant") {
