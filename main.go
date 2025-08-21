@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"go-monitoring/config"
@@ -13,6 +15,22 @@ import (
 
 	"github.com/joho/godotenv"
 )
+
+// getCheckIntervalHours returns the check interval in hours from environment variable
+// Defaults to 1 hour if not set or invalid
+func getCheckIntervalHours() int {
+	envValue := os.Getenv("CHECK_INTERVAL_HOURS")
+	if envValue == "" {
+		return 1 // Default to 1 hour
+	}
+
+	interval, err := strconv.Atoi(envValue)
+	if err != nil || interval <= 0 {
+		return 1 // Default to 1 hour if invalid
+	}
+
+	return interval
+}
 
 func main() {
 	// Load .env file if it exists
@@ -39,24 +57,21 @@ func main() {
 			}
 
 			endpoint := collector.Endpoint{
-				Name:                  fmt.Sprintf("%s-%s", solver.Name, base.Name),
-				BaseName:              base.Name,
-				SolverName:            solver.Name,
-				RouteSolver:           solver.Type,
-				Network:               base.Network,
-				TokenIn:               base.TokenIn,
-				TokenOut:              base.TokenOut,
-				TokenInDecimals:       base.TokenInDecimals,
-				TokenOutDecimals:      base.TokenOutDecimals,
-				SwapAmount:            base.SwapAmount,
-				ExpectedPool:          base.ExpectedPool,
-				ExpectedNoHops:        base.ExpectedNoHops,
-				CheckInterval:         base.CheckInterval,
-				LastStatus:            "unknown",
-				LastChecked:           time.Time{},
-				NotificationType:      base.NotificationType,
-				NotificationRecipient: base.NotificationRecipient,
-				Message:               "",
+				Name:             fmt.Sprintf("%s-%s", solver.Name, base.Name),
+				BaseName:         base.Name,
+				SolverName:       solver.Name,
+				RouteSolver:      solver.Type,
+				Network:          base.Network,
+				TokenIn:          base.TokenIn,
+				TokenOut:         base.TokenOut,
+				TokenInDecimals:  base.TokenInDecimals,
+				TokenOutDecimals: base.TokenOutDecimals,
+				SwapAmount:       base.SwapAmount,
+				ExpectedPool:     base.ExpectedPool,
+				ExpectedNoHops:   base.ExpectedNoHops,
+				LastStatus:       "unknown",
+				LastChecked:      time.Time{},
+				Message:          "",
 			}
 			generatedEndpoints = append(generatedEndpoints, endpoint)
 		}
@@ -65,7 +80,10 @@ func main() {
 	// Initialize the collector with the generated endpoints
 	collector.SetEndpoints(generatedEndpoints)
 
-	go monitor.MonitorAPIs() // Start monitoring in the background
+	// Get check interval from environment variable in main thread
+	checkIntervalHours := getCheckIntervalHours()
+
+	go monitor.MonitorAPIs(checkIntervalHours) // Start monitoring in the background
 	notifications.SendEmail("Service starting")
 
 	// Register HTTP handlers

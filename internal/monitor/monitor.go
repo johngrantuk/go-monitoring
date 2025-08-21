@@ -36,19 +36,8 @@ func CheckAPI(endpoint *collector.Endpoint) {
 }
 
 // MonitorAPIs periodically checks API status
-func MonitorAPIs() {
-	// Get the minimum check interval and create ticker outside the lock
-	var minInterval int
-	collector.WithEndpointsLock(func(endpoints []collector.Endpoint) {
-		minInterval = endpoints[0].CheckInterval
-		for _, endpoint := range endpoints {
-			if endpoint.CheckInterval < minInterval {
-				minInterval = endpoint.CheckInterval
-			}
-		}
-	})
-
-	ticker := time.NewTicker(time.Duration(minInterval) * time.Hour)
+func MonitorAPIs(checkIntervalHours int) {
+	ticker := time.NewTicker(time.Duration(checkIntervalHours) * time.Hour)
 	defer ticker.Stop()
 
 	// Perform initial checks immediately

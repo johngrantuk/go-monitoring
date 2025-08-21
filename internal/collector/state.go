@@ -7,24 +7,21 @@ import (
 
 // Endpoint represents a monitored API endpoint
 type Endpoint struct {
-	Name                  string
-	BaseName              string
-	SolverName            string
-	RouteSolver           string
-	Network               string
-	TokenIn               string
-	TokenOut              string
-	TokenInDecimals       int
-	TokenOutDecimals      int
-	SwapAmount            string
-	ExpectedPool          string
-	ExpectedNoHops        int
-	CheckInterval         int
-	LastStatus            string
-	LastChecked           time.Time
-	NotificationType      string
-	NotificationRecipient string
-	Message               string
+	Name             string
+	BaseName         string
+	SolverName       string
+	RouteSolver      string
+	Network          string
+	TokenIn          string
+	TokenOut         string
+	TokenInDecimals  int
+	TokenOutDecimals int
+	SwapAmount       string
+	ExpectedPool     string
+	ExpectedNoHops   int
+	LastStatus       string
+	LastChecked      time.Time
+	Message          string
 }
 
 var (
