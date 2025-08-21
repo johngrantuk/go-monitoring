@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go-monitoring/config"
+	"go-monitoring/handlers"
 	"go-monitoring/internal/collector"
 	"go-monitoring/internal/monitor"
 	"go-monitoring/notifications"
@@ -63,7 +64,11 @@ func main() {
 
 	go monitor.MonitorAPIs() // Start monitoring in the background
 	notifications.SendEmail("Service starting")
-	http.HandleFunc("/", dashboardHandler)
+
+	// Register HTTP handlers
+	http.HandleFunc("/", handlers.DashboardHandler)
+	http.HandleFunc("/check/", handlers.CheckEndpointHandler)
+
 	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }

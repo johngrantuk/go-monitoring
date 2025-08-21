@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -66,8 +66,8 @@ func getNetworkName(network string) string {
 	}
 }
 
-// checkEndpointHandler triggers a check for a specific endpoint
-func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
+// CheckEndpointHandler triggers a check for a specific endpoint
+func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -89,8 +89,8 @@ func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// Dashboard handler
-func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+// DashboardHandler handles the main dashboard page
+func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 	// Get a copy of endpoints from the collector
 	endpoints := collector.GetEndpointsCopy()
 
@@ -184,9 +184,4 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fmt.Fprintln(w, "</table></body></html>")
-}
-
-func init() {
-	// Register the check endpoint handler
-	http.HandleFunc("/check/", checkEndpointHandler)
 }
