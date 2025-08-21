@@ -10,18 +10,21 @@ import (
 	"go-monitoring/internal/collector"
 	"go-monitoring/internal/monitor"
 	"go-monitoring/notifications"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		// It's okay if .env doesn't exist, just log it
+		fmt.Println("No .env file found, using system environment variables")
+	}
+
 	// Generate endpoints by combining base configurations with route solvers
 	var generatedEndpoints []collector.Endpoint
 	for _, base := range config.BaseEndpoints {
-		for _, solver := range config.RouteSolvers {
-			// Skip disabled solvers
-			if !solver.Enabled {
-				continue
-			}
-
+		for _, solver := range config.GetEnabledRouteSolvers() {
 			// Check if the solver supports this network
 			supported := false
 			for _, network := range solver.SupportedNetworks {

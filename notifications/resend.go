@@ -13,7 +13,7 @@ import (
 
 func SendEmail(message string) {
 	// Check if email sending is enabled
-	if !config.EnableEmailSending {
+	if !config.GetEmailNotificationsEnabled() {
 		fmt.Printf("%s[INFO]%s: Email sending is disabled\n", config.ColorYellow, config.ColorReset)
 		return
 	}

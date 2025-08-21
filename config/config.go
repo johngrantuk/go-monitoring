@@ -24,19 +24,13 @@ type BaseEndpoint struct {
 // RouteSolver represents a specific route solver configuration
 type RouteSolver struct {
 	Name              string
-	Type              string // "paraswap", "1inch", "0x"
+	Type              string // e.g. "paraswap", "1inch", "0x"
 	SupportedNetworks []string
-	Enabled           bool
 }
 
-// Global configuration flags
-var (
-	EnableEmailSending = getEmailNotificationsEnabled()
-)
-
-// getEmailNotificationsEnabled reads the EMAIL_NOTIFICATIONS environment variable
-// and returns true if it's set to "true", "1", "yes", or "on" (case insensitive)
-func getEmailNotificationsEnabled() bool {
+// GetEmailNotificationsEnabled checks if email notifications should be enabled
+// based on environment variables at runtime
+func GetEmailNotificationsEnabled() bool {
 	envValue := os.Getenv("EMAIL_NOTIFICATIONS")
 	if envValue == "" {
 		return false // Default to false if not set
@@ -51,6 +45,27 @@ func getEmailNotificationsEnabled() bool {
 		return true
 	default:
 		return false
+	}
+}
+
+// getRouteSolverEnabled checks if a specific route solver should be enabled
+// based on environment variables. Returns true by default if no env var is found.
+func getRouteSolverEnabled(solverType string) bool {
+	envVarName := "DISABLE_" + strings.ToUpper(solverType)
+	envValue := os.Getenv(envVarName)
+	if envValue == "" {
+		return true // Default to enabled if no env var is found
+	}
+
+	// Convert to lowercase for case-insensitive comparison
+	envValue = strings.ToLower(envValue)
+
+	// Check for various "true" values that would disable the solver
+	switch envValue {
+	case "true", "1", "yes", "on", "disable":
+		return false
+	default:
+		return true
 	}
 }
 
@@ -260,36 +275,41 @@ var RouteSolvers = []RouteSolver{
 		Name:              "Paraswap",
 		Type:              "paraswap",
 		SupportedNetworks: []string{"1", "8453", "42161", "100", "43114"}, // Mainnet, Base, Arbitrum, Gnosis, Avalanche
-		Enabled:           true,
 	},
 	{
 		Name:              "1inch",
 		Type:              "1inch",
 		SupportedNetworks: []string{"1", "8453", "42161", "100", "43114"}, // Mainnet, Base, Arbitrum, Gnosis, Avalanche
-		Enabled:           true,
 	},
 	{
 		Name:              "0x",
 		Type:              "0x",
 		SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
-		Enabled:           true,
 	},
 	{
 		Name:              "Odos",
 		Type:              "odos",
 		SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
-		Enabled:           true,
 	},
-	// {
-	// 	Name:              "KyberSwap",
-	// 	Type:              "kyberswap",
-	// 	SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
-	// 	Enabled:           true,
-	// },
+	{
+		Name:              "KyberSwap",
+		Type:              "kyberswap",
+		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
+	},
 	{
 		Name:              "HyperBloom",
 		Type:              "hyperbloom",
 		SupportedNetworks: []string{"999"}, // HyperEVM
-		Enabled:           true,
 	},
+}
+
+// GetEnabledRouteSolvers returns only the enabled route solvers based on environment variables
+func GetEnabledRouteSolvers() []RouteSolver {
+	var enabledSolvers []RouteSolver
+	for _, solver := range RouteSolvers {
+		if getRouteSolverEnabled(solver.Type) {
+			enabledSolvers = append(enabledSolvers, solver)
+		}
+	}
+	return enabledSolvers
 }
