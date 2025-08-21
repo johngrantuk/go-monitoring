@@ -1,5 +1,10 @@
 package config
 
+import (
+	"os"
+	"strings"
+)
+
 // BaseEndpoint represents the common configuration for an endpoint
 type BaseEndpoint struct {
 	Name                  string
@@ -26,8 +31,28 @@ type RouteSolver struct {
 
 // Global configuration flags
 var (
-	EnableEmailSending = false
+	EnableEmailSending = getEmailNotificationsEnabled()
 )
+
+// getEmailNotificationsEnabled reads the EMAIL_NOTIFICATIONS environment variable
+// and returns true if it's set to "true", "1", "yes", or "on" (case insensitive)
+func getEmailNotificationsEnabled() bool {
+	envValue := os.Getenv("EMAIL_NOTIFICATIONS")
+	if envValue == "" {
+		return false // Default to false if not set
+	}
+
+	// Convert to lowercase for case-insensitive comparison
+	envValue = strings.ToLower(envValue)
+
+	// Check for various "true" values
+	switch envValue {
+	case "true", "1", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
 
 // BaseEndpoints contains all base endpoint configurations
 var BaseEndpoints = []BaseEndpoint{
