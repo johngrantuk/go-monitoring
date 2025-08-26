@@ -1,0 +1,213 @@
+package monitor
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"go-monitoring/config"
+	"go-monitoring/internal/api"
+	"go-monitoring/internal/collector"
+	"go-monitoring/providers"
+)
+
+// ProviderConfig holds the configuration for a provider
+type ProviderConfig struct {
+	Handler            api.ResponseHandler
+	URLBuilder         api.URLBuilder
+	ParameterBuilder   api.ParameterBuilder
+	RequestBodyBuilder api.RequestBodyBuilder
+	BaseURL            string
+	APIKeyEnvVar       string
+	CustomHeaders      map[string]string
+	UsePOST            bool // Whether to use POST request instead of GET
+}
+
+// CheckOptions provides optional configuration for provider checks
+type CheckOptions struct {
+	UseIgnoreList *bool // Optional override for ignore list usage
+}
+
+// ProviderRegistry manages all registered providers
+type ProviderRegistry struct {
+	providers map[string]ProviderConfig
+}
+
+// NewProviderRegistry creates a new provider registry
+func NewProviderRegistry() *ProviderRegistry {
+	return &ProviderRegistry{
+		providers: make(map[string]ProviderConfig),
+	}
+}
+
+// RegisterProvider registers a provider with the new generic client
+func (r *ProviderRegistry) RegisterProvider(name string, config ProviderConfig) {
+	r.providers[name] = config
+}
+
+// CheckProvider checks a provider with custom options
+func (r *ProviderRegistry) CheckProvider(endpoint *collector.Endpoint, options *CheckOptions) {
+	// Check if provider uses new generic client
+	if config, exists := r.providers[endpoint.RouteSolver]; exists {
+		r.checkWithGenericClient(endpoint, config, options)
+		return
+	}
+
+	// Provider not found
+	endpoint.LastChecked = time.Now()
+	endpoint.LastStatus = "unsupported"
+	fmt.Printf("Unsupported route solver '%s' for endpoint %s\n", endpoint.RouteSolver, endpoint.Name)
+}
+
+// checkWithGenericClient checks a provider using the new generic client
+func (r *ProviderRegistry) checkWithGenericClient(endpoint *collector.Endpoint, config ProviderConfig, checkOptions *CheckOptions) {
+	// Check for WIP cases before making any requests
+	if r.isWIPCase(endpoint) {
+		r.handleWIPCase(endpoint)
+		return
+	}
+
+	client := api.NewAPIClient()
+
+	// Validate API key if required
+	var apiKey string
+	var err error
+	if config.APIKeyEnvVar != "" {
+		apiKey, err = client.ValidateAPIKey(config.APIKeyEnvVar, endpoint)
+		if err != nil {
+			return // Error already handled by ValidateAPIKey
+		}
+	}
+
+	// Prepare headers
+	headers := make(map[string]string)
+	for key, value := range config.CustomHeaders {
+		headers[key] = value
+	}
+	if apiKey != "" {
+		// Add API key to headers (provider-specific)
+		switch endpoint.RouteSolver {
+		case "0x":
+			headers["0x-api-key"] = apiKey
+			headers["0x-version"] = "v2"
+		case "1inch":
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
+			headers["Content-Type"] = "application/json"
+		case "hyperbloom":
+			headers["api-key"] = apiKey
+		}
+	}
+
+	// Use options if provided, otherwise default to true
+	useIgnoreList := false // Default behavior
+	if checkOptions != nil && checkOptions.UseIgnoreList != nil {
+		useIgnoreList = *checkOptions.UseIgnoreList
+	}
+	// Configure request options
+	requestOptions := api.RequestOptions{
+		UseIgnoreList: useIgnoreList,
+		CustomHeaders: headers,
+	}
+
+	client.CheckAPI(endpoint, config.Handler, config.URLBuilder, config.RequestBodyBuilder, config.UsePOST, requestOptions)
+}
+
+// isWIPCase checks if the endpoint is a WIP case that should be handled specially
+func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
+	switch endpoint.RouteSolver {
+	case "1inch":
+		return strings.Contains(endpoint.Name, "GyroE") ||
+			strings.Contains(endpoint.Name, "Quant") ||
+			strings.Contains(endpoint.Name, "reCLAMM") ||
+			endpoint.Network == "43114"
+	case "kyberswap":
+		return strings.Contains(endpoint.Name, "reCLAMM")
+	case "odos":
+		return strings.Contains(endpoint.Name, "Quant")
+	default:
+		return false
+	}
+}
+
+// handleWIPCase handles WIP cases by setting appropriate status and message
+func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
+	endpoint.LastChecked = time.Now()
+
+	var message string
+	switch endpoint.RouteSolver {
+	case "1inch":
+		if strings.Contains(endpoint.Name, "GyroE") {
+			message = "1inch GyroE integration WIP"
+		} else if strings.Contains(endpoint.Name, "Quant") {
+			message = "1inch QuantAMM integration WIP"
+		} else if strings.Contains(endpoint.Name, "reCLAMM") {
+			message = "1inch reCLAMM integration WIP"
+		} else if endpoint.Network == "43114" {
+			message = "1inch network support WIP"
+		}
+	case "kyberswap":
+		message = "KyberSwap reCLAMM integration WIP"
+	case "odos":
+		message = "Odos QuantAMM integration WIP"
+	}
+
+	endpoint.LastStatus = "info"
+	endpoint.Message = message
+	fmt.Printf("%s[INFO]%s %s: API is %s%s%s\n", config.ColorYellow, config.ColorReset, endpoint.Name, config.ColorOrange, endpoint.LastStatus, config.ColorReset)
+}
+
+// Global registry instance
+var GlobalRegistry *ProviderRegistry
+
+// InitializeRegistry initializes the global provider registry
+func InitializeRegistry() {
+	GlobalRegistry = NewProviderRegistry()
+
+	// Register providers using the new generic client
+	GlobalRegistry.RegisterProvider("0x", ProviderConfig{
+		Handler:      providers.NewZeroXHandler(),
+		URLBuilder:   providers.NewZeroXURLBuilder(),
+		APIKeyEnvVar: "ZEROX_API_KEY",
+	})
+
+	GlobalRegistry.RegisterProvider("paraswap", ProviderConfig{
+		Handler:    providers.NewParaswapHandler(),
+		URLBuilder: providers.NewParaswapURLBuilder(),
+		CustomHeaders: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+
+	GlobalRegistry.RegisterProvider("1inch", ProviderConfig{
+		Handler:      providers.NewOneInchHandler(),
+		URLBuilder:   providers.NewOneInchURLBuilder(),
+		APIKeyEnvVar: "INCH_API_KEY",
+		CustomHeaders: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+
+	GlobalRegistry.RegisterProvider("hyperbloom", ProviderConfig{
+		Handler:      providers.NewHyperBloomHandler(),
+		URLBuilder:   providers.NewHyperBloomURLBuilder(),
+		APIKeyEnvVar: "HYPERBLOOM_API_KEY",
+	})
+
+	GlobalRegistry.RegisterProvider("kyberswap", ProviderConfig{
+		Handler:    providers.NewKyberSwapHandler(),
+		URLBuilder: providers.NewKyberSwapURLBuilder(),
+		CustomHeaders: map[string]string{
+			"x-client-id": "BalancerTest",
+		},
+	})
+
+	GlobalRegistry.RegisterProvider("odos", ProviderConfig{
+		Handler:            &providers.OdosHandler{},
+		URLBuilder:         &providers.OdosURLBuilder{},
+		RequestBodyBuilder: &providers.OdosRequestBodyBuilder{},
+		UsePOST:            true,
+		CustomHeaders: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
+}

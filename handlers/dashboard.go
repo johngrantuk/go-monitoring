@@ -1,10 +1,13 @@
-package main
+package handlers
 
 import (
 	"fmt"
 	"net/http"
 	"sort"
 	"time"
+
+	"go-monitoring/internal/collector"
+	"go-monitoring/internal/monitor"
 )
 
 // formatTimeAgo returns a human-readable time format
@@ -63,8 +66,8 @@ func getNetworkName(network string) string {
 	}
 }
 
-// checkEndpointHandler triggers a check for a specific endpoint
-func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
+// CheckEndpointHandler triggers a check for a specific endpoint
+func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -72,35 +75,28 @@ func checkEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	name := r.URL.Path[len("/check/"):]
 
-	mu.Lock()
-	var targetEndpoint *Endpoint
-	for i := range endpoints {
-		if endpoints[i].Name == name {
-			targetEndpoint = &endpoints[i]
-			break
-		}
-	}
-	mu.Unlock()
+	// Use the collector to update the endpoint directly
+	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
+		useIgnoreList := true
+		monitor.CheckAPI(endpoint, &monitor.CheckOptions{UseIgnoreList: &useIgnoreList})
+	})
 
-	if targetEndpoint == nil {
+	if !updated {
 		http.Error(w, "Endpoint not found", http.StatusNotFound)
 		return
 	}
-
-	// Trigger the check
-	checkAPI(targetEndpoint)
 
 	// Redirect back to the dashboard
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-// Dashboard handler
-func dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
+// DashboardHandler handles the main dashboard page
+func DashboardHandler(w http.ResponseWriter, r *http.Request) {
+	// Get a copy of endpoints from the collector
+	endpoints := collector.GetEndpointsCopy()
 
 	// Group endpoints by BaseName
-	endpointGroups := make(map[string][]Endpoint)
+	endpointGroups := make(map[string][]collector.Endpoint)
 	for _, endpoint := range endpoints {
 		endpointGroups[endpoint.BaseName] = append(endpointGroups[endpoint.BaseName], endpoint)
 	}
@@ -189,9 +185,4 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	fmt.Fprintln(w, "</table></body></html>")
-}
-
-func init() {
-	// Register the check endpoint handler
-	http.HandleFunc("/check/", checkEndpointHandler)
 }
