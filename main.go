@@ -81,6 +81,9 @@ func main() {
 	// Initialize the collector with the generated endpoints
 	collector.SetEndpoints(generatedEndpoints)
 
+	// Initialize the provider registry
+	monitor.InitializeRegistry()
+
 	// Get check interval from environment variable in main thread
 	checkIntervalHours := getCheckIntervalHours()
 
