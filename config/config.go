@@ -145,7 +145,7 @@ var BaseEndpoints = []BaseEndpoint{
 		TokenOutDecimals: 18,
 		ExpectedPool:     "0xc6ac6abae59d58213800ace88d44526725d75f3a",
 		ExpectedNoHops:   1,
-		SwapAmount:       "1000000",
+		SwapAmount:       "100000",
 	},
 	{
 		Name:             "Gnosis-Boosted-Stable(WETH/wstETH)",
@@ -257,6 +257,11 @@ var RouteSolvers = []RouteSolver{
 		Name:              "HyperBloom",
 		Type:              "hyperbloom",
 		SupportedNetworks: []string{"999"}, // HyperEVM
+	},
+	{
+		Name:              "Balancer SOR",
+		Type:              "balancer_sor",
+		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM
 	},
 }
 

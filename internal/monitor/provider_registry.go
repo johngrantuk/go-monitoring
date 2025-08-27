@@ -210,4 +210,14 @@ func InitializeRegistry() {
 			"Content-Type": "application/json",
 		},
 	})
+
+	GlobalRegistry.RegisterProvider("balancer_sor", ProviderConfig{
+		Handler:            providers.NewBalancerSORHandler(),
+		URLBuilder:         providers.NewBalancerSORURLBuilder(),
+		RequestBodyBuilder: providers.NewBalancerSORRequestBodyBuilder(),
+		UsePOST:            true,
+		CustomHeaders: map[string]string{
+			"Content-Type": "application/json",
+		},
+	})
 }
