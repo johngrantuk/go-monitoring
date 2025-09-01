@@ -13,7 +13,8 @@ import (
 
 // ZeroXResponse represents the structure of the 0x API response
 type ZeroXResponse struct {
-	Route struct {
+	BuyAmount string `json:"buyAmount,omitempty"`
+	Route     struct {
 		Fills []struct {
 			Source string `json:"source"`
 		} `json:"fills"`
@@ -79,6 +80,11 @@ func (h *ZeroXHandler) HandleResponse(response *api.APIResponse, endpoint *colle
 		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
 		h.handleError(endpoint, "down", fmt.Sprintf("Expected %d tokens (hops + 2), got %d", expectedTokens, len(result.Route.Tokens)), string(prettyJSON))
 		return fmt.Errorf("expected %d tokens, got %d", expectedTokens, len(result.Route.Tokens))
+	}
+
+	// Store the return amount if available
+	if result.BuyAmount != "" {
+		endpoint.ReturnAmount = result.BuyAmount
 	}
 
 	return nil

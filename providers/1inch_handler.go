@@ -90,6 +90,11 @@ func (h *OneInchHandler) HandleResponse(response *api.APIResponse, endpoint *col
 		return fmt.Errorf("protocol parts sum to %d, expected 100", totalPart)
 	}
 
+	// Store the return amount if available
+	if result.DstAmount != "" {
+		endpoint.ReturnAmount = result.DstAmount
+	}
+
 	return nil
 }
 

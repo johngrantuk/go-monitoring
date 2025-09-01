@@ -14,7 +14,8 @@ import (
 type ParaswapResponse struct {
 	Error      string `json:"error,omitempty"`
 	PriceRoute struct {
-		BestRoute []struct {
+		DestAmount string `json:"destAmount,omitempty"`
+		BestRoute  []struct {
 			Swaps []struct {
 				SwapExchanges []struct {
 					Exchange      string   `json:"exchange"`
@@ -82,6 +83,11 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
 		h.handleError(endpoint, "down", "Route does not use Balancer V3", string(prettyJSON))
 		return fmt.Errorf("route does not use Balancer V3")
+	}
+
+	// Store the return amount if available
+	if result.PriceRoute.DestAmount != "" {
+		endpoint.ReturnAmount = result.PriceRoute.DestAmount
 	}
 
 	return nil

@@ -72,6 +72,18 @@ func (h *BalancerSORHandler) HandleResponse(response *api.APIResponse, endpoint 
 		return fmt.Errorf("no return amount found in response")
 	}
 
+	// Store the return amount
+	endpoint.ReturnAmount = result.Data.SorGetSwapPaths.ReturnAmount
+
+	// Convert return amount from decimal format to raw format using output token decimals
+	rawReturnAmount, err := h.convertFromDecimalAmount(result.Data.SorGetSwapPaths.ReturnAmount, endpoint.TokenOutDecimals)
+	if err != nil {
+		// Log the error but don't fail the request - just use the original decimal amount
+		fmt.Printf("Warning: Could not convert return amount to raw format: %v\n", err)
+	} else {
+		endpoint.ReturnAmount = rawReturnAmount
+	}
+
 	// Check if paths exist and have at least 1 path
 	if len(result.Data.SorGetSwapPaths.Paths) == 0 {
 		h.handleError(endpoint, "down", "No paths found in response", string(response.Body))
@@ -96,6 +108,24 @@ func (h *BalancerSORHandler) HandleResponse(response *api.APIResponse, endpoint 
 	}
 
 	return nil
+}
+
+// convertFromDecimalAmount converts a decimal amount back to raw format using the token decimals
+func (h *BalancerSORHandler) convertFromDecimalAmount(decimalAmount string, decimals int) (string, error) {
+	// Parse the decimal amount as a float
+	decimalFloat, ok := new(big.Float).SetString(decimalAmount)
+	if !ok {
+		return "", fmt.Errorf("invalid decimal amount: %s", decimalAmount)
+	}
+
+	// Convert to raw by multiplying by 10^decimals
+	multiplier := new(big.Float).SetFloat64(math.Pow10(decimals))
+	result := new(big.Float).Mul(decimalFloat, multiplier)
+
+	// Convert to integer and then to string
+	resultInt := new(big.Int)
+	result.Int(resultInt)
+	return resultInt.String(), nil
 }
 
 // GetIgnoreList returns the list of DEXs to ignore based on the network

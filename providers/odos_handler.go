@@ -61,6 +61,12 @@ func (h *OdosHandler) HandleResponse(response *api.APIResponse, endpoint *collec
 		return fmt.Errorf("response validation failed")
 	}
 
+	// Extract and store the return amount
+	var odosResponse OdosQuoteResponse
+	if err := json.Unmarshal(response.Body, &odosResponse); err == nil && len(odosResponse.OutAmounts) > 0 {
+		endpoint.ReturnAmount = odosResponse.OutAmounts[0]
+	}
+
 	return nil
 }
 
@@ -128,7 +134,7 @@ func (h *OdosHandler) validateOdosResponse(body []byte) (bool, error) {
 		return false, fmt.Errorf("no outValues in response")
 	}
 
-	// Check if outValues is greater than 0
+	// Check if the first outValue is greater than 0
 	if response.OutValues[0] <= 0 {
 		return false, fmt.Errorf("outValues is not greater than 0: %f", response.OutValues[0])
 	}

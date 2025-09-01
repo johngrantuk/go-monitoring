@@ -82,6 +82,11 @@ func (h *HyperBloomHandler) HandleResponse(response *api.APIResponse, endpoint *
 		return fmt.Errorf("buyAmount is 0")
 	}
 
+	// Store the return amount
+	endpoint.ReturnAmount = result.BuyAmount
+
+	// Check if we have a route ID (indicates successful route calculation)
+
 	// Check if we have a valid price
 	if result.Price == "" {
 		h.handleError(endpoint, "down", "no price in response", string(response.Body))
