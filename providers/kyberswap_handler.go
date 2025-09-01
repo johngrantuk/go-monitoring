@@ -94,6 +94,9 @@ func (h *KyberSwapHandler) HandleResponse(response *api.APIResponse, endpoint *c
 		return fmt.Errorf("amountOut is 0")
 	}
 
+	// Store the return amount
+	endpoint.ReturnAmount = result.Data.RouteSummary.AmountOut
+
 	// Check if we have a route ID (indicates successful route calculation)
 	if result.Data.RouteSummary.RouteID == "" {
 		h.handleError(endpoint, "down", "no route ID in response", string(response.Body))

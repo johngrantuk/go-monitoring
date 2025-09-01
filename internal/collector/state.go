@@ -23,6 +23,7 @@ type Endpoint struct {
 	LastStatus       string
 	LastChecked      time.Time
 	Message          string
+	ReturnAmount     string
 }
 
 var (

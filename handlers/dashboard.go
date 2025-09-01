@@ -8,6 +8,7 @@ import (
 
 	"go-monitoring/internal/collector"
 	"go-monitoring/internal/monitor"
+	"math/big"
 )
 
 // formatTimeAgo returns a human-readable time format
@@ -152,21 +153,55 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		</script>
 	</head><body><h1>API Monitor</h1>`)
-	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Last Checked</th><th>Actions</th></tr>")
+	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Return Amount</th><th>Last Checked</th><th>Actions</th></tr>")
 
 	for _, baseName := range baseNames {
 		// Add base name row with token info
 		networkName := getNetworkName(endpointGroups[baseName][0].Network)
 		poolLink := fmt.Sprintf("https://balancer.fi/pools/%s/v3/%s", networkName, endpointGroups[baseName][0].ExpectedPool)
-		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='5'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a></span></td></tr>",
+		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='6'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a><br>Amount: %s</span></td></tr>",
 			baseName,
 			endpointGroups[baseName][0].TokenIn,
 			endpointGroups[baseName][0].TokenOut,
 			poolLink,
-			endpointGroups[baseName][0].ExpectedPool)
+			endpointGroups[baseName][0].ExpectedPool,
+			endpointGroups[baseName][0].SwapAmount)
 
 		// Add solver rows
-		for _, endpoint := range endpointGroups[baseName] {
+		// Sort endpoints by return amount (largest first)
+		sortedEndpoints := make([]collector.Endpoint, len(endpointGroups[baseName]))
+		copy(sortedEndpoints, endpointGroups[baseName])
+
+		// Sort by return amount in descending order
+		sort.Slice(sortedEndpoints, func(i, j int) bool {
+			// Convert return amounts to big.Int for proper numeric comparison
+			amountI := sortedEndpoints[i].ReturnAmount
+			amountJ := sortedEndpoints[j].ReturnAmount
+
+			// If either amount is empty/N/A, treat as 0
+			if amountI == "" || amountI == "N/A" {
+				amountI = "0"
+			}
+			if amountJ == "" || amountJ == "N/A" {
+				amountJ = "0"
+			}
+
+			// Parse as big.Int for comparison
+			bigI := new(big.Int)
+			bigJ := new(big.Int)
+
+			if _, ok := bigI.SetString(amountI, 10); !ok {
+				bigI.SetString("0", 10)
+			}
+			if _, ok := bigJ.SetString(amountJ, 10); !ok {
+				bigJ.SetString("0", 10)
+			}
+
+			// Return true if i should come before j (larger amount first)
+			return bigI.Cmp(bigJ) > 0
+		})
+
+		for _, endpoint := range sortedEndpoints {
 			statusClass := "status-unknown"
 			if endpoint.LastStatus == "up" {
 				statusClass = "status-up"
@@ -175,11 +210,19 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			} else if endpoint.LastStatus == "disabled" {
 				statusClass = "status-disabled"
 			}
-			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
+
+			// Format return amount display
+			returnAmountDisplay := "N/A"
+			if endpoint.ReturnAmount != "" {
+				returnAmountDisplay = endpoint.ReturnAmount
+			}
+
+			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
 				endpoint.SolverName,
 				statusClass,
 				endpoint.LastStatus,
 				endpoint.Message,
+				returnAmountDisplay,
 				formatTimeAgo(endpoint.LastChecked),
 				endpoint.Name)
 		}
