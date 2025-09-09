@@ -137,6 +137,23 @@ func (h *HyperBloomHandler) HandleResponse(response *api.APIResponse, endpoint *
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the HyperBloom API response for market price (all sources)
+func (h *HyperBloomHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result HyperBloomResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate sources - just extract the amount
+	if result.BuyAmount != "" {
+		endpoint.MarketPrice = result.BuyAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 // For HyperBloom, we don't use ignore lists, we specify specific sources instead
 func (h *HyperBloomHandler) GetIgnoreList(network string) (string, error) {

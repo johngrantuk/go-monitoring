@@ -70,6 +70,22 @@ func (h *OdosHandler) HandleResponse(response *api.APIResponse, endpoint *collec
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the Odos API response for market price (all sources)
+func (h *OdosHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Check status code
+	if response.StatusCode != 200 {
+		return fmt.Errorf("unexpected status code: %d", response.StatusCode)
+	}
+
+	// For market price, we don't validate sources - just extract the amount
+	var odosResponse OdosQuoteResponse
+	if err := json.Unmarshal(response.Body, &odosResponse); err == nil && len(odosResponse.OutAmounts) > 0 {
+		endpoint.MarketPrice = odosResponse.OutAmounts[0]
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore for Odos
 func (h *OdosHandler) GetIgnoreList(network string) (string, error) {
 	return "", nil

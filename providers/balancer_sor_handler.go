@@ -110,6 +110,31 @@ func (h *BalancerSORHandler) HandleResponse(response *api.APIResponse, endpoint 
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the Balancer SOR API response for market price (all sources)
+func (h *BalancerSORHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result BalancerSORResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate pools - just extract the amount
+	if result.Data.SorGetSwapPaths.ReturnAmount != "" {
+		// Convert return amount from decimal format to raw format using output token decimals
+		rawReturnAmount, err := h.convertFromDecimalAmount(result.Data.SorGetSwapPaths.ReturnAmount, endpoint.TokenOutDecimals)
+		if err != nil {
+			// Log the error but don't fail the request - just use the original decimal amount
+			fmt.Printf("Warning: Could not convert market price amount to raw format: %v\n", err)
+			endpoint.MarketPrice = result.Data.SorGetSwapPaths.ReturnAmount
+		} else {
+			endpoint.MarketPrice = rawReturnAmount
+		}
+	}
+
+	return nil
+}
+
 // convertFromDecimalAmount converts a decimal amount back to raw format using the token decimals
 func (h *BalancerSORHandler) convertFromDecimalAmount(decimalAmount string, decimals int) (string, error) {
 	// Parse the decimal amount as a float

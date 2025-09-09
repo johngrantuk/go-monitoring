@@ -30,6 +30,7 @@ type APIResponse struct {
 // ResponseHandler defines how to process API responses
 type ResponseHandler interface {
 	HandleResponse(response *APIResponse, endpoint *collector.Endpoint) error
+	HandleResponseForMarketPrice(response *APIResponse, endpoint *collector.Endpoint) error
 	GetIgnoreList(network string) (string, error)
 }
 
@@ -208,6 +209,62 @@ func (c *APIClient) CheckAPI(endpoint *collector.Endpoint, handler ResponseHandl
 	endpoint.LastStatus = "up"
 	endpoint.Message = "Ok"
 	fmt.Printf("%s[SUCCESS]%s %s: API is %s%s%s\n", config.ColorGreen, config.ColorReset, endpoint.Name, config.ColorGreen, endpoint.LastStatus, config.ColorReset)
+}
+
+// CheckAPIForMarketPrice performs a complete API check for market price using the provided handler and URL builder
+func (c *APIClient) CheckAPIForMarketPrice(endpoint *collector.Endpoint, handler ResponseHandler, urlBuilder URLBuilder, requestBodyBuilder RequestBodyBuilder, usePOST bool, options RequestOptions) {
+	// Update endpoint timestamp
+	endpoint.LastChecked = time.Now()
+
+	var response *APIResponse
+
+	if usePOST && requestBodyBuilder != nil {
+		// Build the request body for POST request
+		requestBody, err := requestBodyBuilder.BuildRequestBody(endpoint, options)
+		if err != nil {
+			c.handleError(endpoint, "error", fmt.Sprintf("Error building request body: %v", err))
+			return
+		}
+
+		// Build the URL using the provider-specific builder
+		fullURL, err := urlBuilder.BuildURL(endpoint, options)
+		if err != nil {
+			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			return
+		}
+		fmt.Println("Market Price URL: ", fullURL)
+
+		// Make the POST request
+		response, err = c.MakePOSTRequest(endpoint, fullURL, requestBody, options)
+		if err != nil {
+			// Error already handled in MakePOSTRequest
+			return
+		}
+	} else {
+		// Build the URL using the provider-specific builder
+		fullURL, err := urlBuilder.BuildURL(endpoint, options)
+		if err != nil {
+			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			return
+		}
+		fmt.Println("Market Price URL: ", fullURL)
+
+		// Make the GET request
+		response, err = c.MakeGETRequest(endpoint, fullURL, options)
+		if err != nil {
+			// Error already handled in MakeGETRequest
+			return
+		}
+	}
+
+	// Handle the response using the provided handler for market price
+	if err := handler.HandleResponseForMarketPrice(response, endpoint); err != nil {
+		c.handleError(endpoint, "down", fmt.Sprintf("Error handling market price response: %v", err))
+		return
+	}
+
+	// Success - don't update LastStatus or Message for market price calls
+	fmt.Printf("%s[MARKET PRICE]%s %s: Market price retrieved successfully\n", config.ColorGreen, config.ColorReset, endpoint.Name)
 }
 
 // handleError updates endpoint status and sends notifications for errors

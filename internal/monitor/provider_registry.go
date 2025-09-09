@@ -47,8 +47,26 @@ func (r *ProviderRegistry) RegisterProvider(name string, config ProviderConfig) 
 // CheckProvider checks a provider with custom options
 func (r *ProviderRegistry) CheckProvider(endpoint *collector.Endpoint, options *CheckOptions) {
 	// Check if provider uses new generic client
-	if config, exists := r.providers[endpoint.RouteSolver]; exists {
-		r.checkWithGenericClient(endpoint, config, options)
+	if providerConfig, exists := r.providers[endpoint.RouteSolver]; exists {
+		// If no specific options provided, make both calls (Balancer-only and market price)
+		if options == nil {
+			// First call: Balancer source only (existing behavior)
+			fmt.Printf("%s[BALANCER CHECK]%s %s: Checking Balancer-only sources\n", config.ColorBlue, config.ColorReset, endpoint.Name)
+			balancerOptions := &CheckOptions{IsBalancerSourceOnly: &[]bool{true}[0]}
+			r.checkWithGenericClient(endpoint, providerConfig, balancerOptions)
+
+			// Add delay between calls to avoid rate limiting
+			fmt.Printf("%s[DELAY]%s %s: Waiting 2 seconds before market price check\n", config.ColorYellow, config.ColorReset, endpoint.Name)
+			time.Sleep(2 * time.Second)
+
+			// Second call: Market price (all sources)
+			fmt.Printf("%s[MARKET PRICE CHECK]%s %s: Checking all sources for market price\n", config.ColorCyan, config.ColorReset, endpoint.Name)
+			marketOptions := &CheckOptions{IsBalancerSourceOnly: &[]bool{false}[0]}
+			r.checkWithGenericClientForMarketPrice(endpoint, providerConfig, marketOptions)
+		} else {
+			// Use provided options (for manual checks)
+			r.checkWithGenericClient(endpoint, providerConfig, options)
+		}
 		return
 	}
 
@@ -109,6 +127,64 @@ func (r *ProviderRegistry) checkWithGenericClient(endpoint *collector.Endpoint, 
 	}
 
 	client.CheckAPI(endpoint, config.Handler, config.URLBuilder, config.RequestBodyBuilder, config.UsePOST, requestOptions)
+}
+
+// checkWithGenericClientForMarketPrice checks a provider for market price (all sources)
+func (r *ProviderRegistry) checkWithGenericClientForMarketPrice(endpoint *collector.Endpoint, config ProviderConfig, checkOptions *CheckOptions) {
+	// Check for WIP cases before making any requests
+	if r.isWIPCase(endpoint) {
+		// For WIP cases, don't make market price calls
+		return
+	}
+
+	client := api.NewAPIClient()
+
+	// Validate API key if required
+	var apiKey string
+	var err error
+	if config.APIKeyEnvVar != "" {
+		apiKey, err = client.ValidateAPIKey(config.APIKeyEnvVar, endpoint)
+		if err != nil {
+			return // Error already handled by ValidateAPIKey
+		}
+	}
+
+	// Prepare headers
+	headers := make(map[string]string)
+	for key, value := range config.CustomHeaders {
+		headers[key] = value
+	}
+	if apiKey != "" {
+		// Add API key to headers (provider-specific)
+		switch endpoint.RouteSolver {
+		case "0x":
+			headers["0x-api-key"] = apiKey
+			headers["0x-version"] = "v2"
+		case "1inch":
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
+			headers["Content-Type"] = "application/json"
+		case "hyperbloom":
+			headers["api-key"] = apiKey
+		}
+	}
+
+	// Use options if provided, otherwise default to false for market price
+	isBalancerSourceOnly := false // Default behavior for market price - use all sources
+	if checkOptions != nil && checkOptions.IsBalancerSourceOnly != nil {
+		isBalancerSourceOnly = *checkOptions.IsBalancerSourceOnly
+	}
+	// Configure request options
+	requestOptions := api.RequestOptions{
+		IsBalancerSourceOnly: isBalancerSourceOnly,
+		CustomHeaders:        headers,
+	}
+
+	// Create a temporary endpoint copy for market price check to avoid overwriting the main endpoint data
+	tempEndpoint := *endpoint
+	client.CheckAPIForMarketPrice(&tempEndpoint, config.Handler, config.URLBuilder, config.RequestBodyBuilder, config.UsePOST, requestOptions)
+
+	// Store the market price result in the original endpoint
+	endpoint.MarketPrice = tempEndpoint.MarketPrice
 }
 
 // isWIPCase checks if the endpoint is a WIP case that should be handled specially

@@ -99,6 +99,23 @@ func (h *OneInchHandler) HandleResponse(response *api.APIResponse, endpoint *col
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the 1inch API response for market price (all sources)
+func (h *OneInchHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result OneInchResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate protocols - just extract the amount
+	if result.DstAmount != "" {
+		endpoint.MarketPrice = result.DstAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 // For 1inch, we don't use ignore lists, we specify specific protocols instead
 func (h *OneInchHandler) GetIgnoreList(network string) (string, error) {

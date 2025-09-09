@@ -94,6 +94,23 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the Paraswap API response for market price (all sources)
+func (h *ParaswapHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result ParaswapResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate exchanges - just extract the amount
+	if result.PriceRoute.DestAmount != "" {
+		endpoint.MarketPrice = result.PriceRoute.DestAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 func (h *ParaswapHandler) GetIgnoreList(network string) (string, error) {
 	switch network {

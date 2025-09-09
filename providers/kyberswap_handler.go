@@ -165,6 +165,23 @@ func (h *KyberSwapHandler) HandleResponse(response *api.APIResponse, endpoint *c
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the KyberSwap API response for market price (all sources)
+func (h *KyberSwapHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result KyberSwapResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate sources or pools - just extract the amount
+	if result.Data.RouteSummary.AmountOut != "" {
+		endpoint.MarketPrice = result.Data.RouteSummary.AmountOut
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 // For KyberSwap, we don't use ignore lists, we specify specific included sources instead
 func (h *KyberSwapHandler) GetIgnoreList(network string) (string, error) {

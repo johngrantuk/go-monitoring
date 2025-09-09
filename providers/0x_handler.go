@@ -87,6 +87,23 @@ func (h *ZeroXHandler) HandleResponse(response *api.APIResponse, endpoint *colle
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the 0x API response for market price (all sources)
+func (h *ZeroXHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result ZeroXResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate sources or hops - just extract the amount
+	if result.BuyAmount != "" {
+		endpoint.MarketPrice = result.BuyAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 func (h *ZeroXHandler) GetIgnoreList(network string) (string, error) {
 	switch network {
