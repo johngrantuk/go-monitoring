@@ -137,6 +137,23 @@ func (h *HyperBloomHandler) HandleResponse(response *api.APIResponse, endpoint *
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the HyperBloom API response for market price (all sources)
+func (h *HyperBloomHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result HyperBloomResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate sources - just extract the amount
+	if result.BuyAmount != "" {
+		endpoint.MarketPrice = result.BuyAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 // For HyperBloom, we don't use ignore lists, we specify specific sources instead
 func (h *HyperBloomHandler) GetIgnoreList(network string) (string, error) {
@@ -157,7 +174,7 @@ func NewHyperBloomURLBuilder() *HyperBloomURLBuilder {
 }
 
 // BuildURL builds the complete URL for HyperBloom API requests
-func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	baseURL := "https://api.hyperbloom.xyz/swap/v1/price"
 
 	// Build parameters
@@ -165,7 +182,11 @@ func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList
 	params.Add("sellToken", endpoint.TokenIn)
 	params.Add("buyToken", endpoint.TokenOut)
 	params.Add("sellAmount", endpoint.SwapAmount)
-	params.Add("includedSources", "BalancerV3")
+
+	// Only add source filtering if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		params.Add("includedSources", "BalancerV3")
+	}
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
 }

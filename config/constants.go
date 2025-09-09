@@ -8,4 +8,5 @@ const (
 	ColorYellow = "\033[33m"
 	ColorOrange = "\033[38;5;208m" // Using 256-color code for orange
 	ColorBlue   = "\033[34m"
+	ColorCyan   = "\033[36m"
 )

@@ -78,8 +78,8 @@ func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the collector to update the endpoint directly
 	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
-		useIgnoreList := true
-		monitor.CheckAPI(endpoint, &monitor.CheckOptions{UseIgnoreList: &useIgnoreList})
+		// Make both calls: Balancer-only and market price
+		monitor.CheckAPI(endpoint, nil) // nil options will trigger both calls
 	})
 
 	if !updated {
@@ -153,13 +153,13 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		</script>
 	</head><body><h1>API Monitor</h1>`)
-	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Return Amount</th><th>Last Checked</th><th>Actions</th></tr>")
+	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Return Amount</th><th>Market Price</th><th>Last Checked</th><th>Actions</th></tr>")
 
 	for _, baseName := range baseNames {
 		// Add base name row with token info
 		networkName := getNetworkName(endpointGroups[baseName][0].Network)
 		poolLink := fmt.Sprintf("https://balancer.fi/pools/%s/v3/%s", networkName, endpointGroups[baseName][0].ExpectedPool)
-		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='6'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a><br>Amount: %s</span></td></tr>",
+		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='7'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a><br>Amount: %s</span></td></tr>",
 			baseName,
 			endpointGroups[baseName][0].TokenIn,
 			endpointGroups[baseName][0].TokenOut,
@@ -217,12 +217,19 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				returnAmountDisplay = endpoint.ReturnAmount
 			}
 
-			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
+			// Format market price display
+			marketPriceDisplay := "N/A"
+			if endpoint.MarketPrice != "" {
+				marketPriceDisplay = endpoint.MarketPrice
+			}
+
+			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
 				endpoint.SolverName,
 				statusClass,
 				endpoint.LastStatus,
 				endpoint.Message,
 				returnAmountDisplay,
+				marketPriceDisplay,
 				formatTimeAgo(endpoint.LastChecked),
 				endpoint.Name)
 		}

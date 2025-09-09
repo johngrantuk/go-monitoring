@@ -31,9 +31,6 @@ type ZeroXHandler struct{}
 // ZeroXURLBuilder implements the URLBuilder interface for 0x API
 type ZeroXURLBuilder struct{}
 
-// ZeroXParameterBuilder implements the ParameterBuilder interface for 0x API
-type ZeroXParameterBuilder struct{}
-
 // NewZeroXHandler creates a new 0x response handler
 func NewZeroXHandler() *ZeroXHandler {
 	return &ZeroXHandler{}
@@ -90,6 +87,23 @@ func (h *ZeroXHandler) HandleResponse(response *api.APIResponse, endpoint *colle
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the 0x API response for market price (all sources)
+func (h *ZeroXHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result ZeroXResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate sources or hops - just extract the amount
+	if result.BuyAmount != "" {
+		endpoint.MarketPrice = result.BuyAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 func (h *ZeroXHandler) GetIgnoreList(network string) (string, error) {
 	switch network {
@@ -120,7 +134,7 @@ func NewZeroXURLBuilder() *ZeroXURLBuilder {
 }
 
 // BuildURL builds the complete URL for 0x API requests
-func (b *ZeroXURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *ZeroXURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	baseURL := "https://api.0x.org/swap/permit2/price"
 
 	// Build parameters
@@ -130,29 +144,18 @@ func (b *ZeroXURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList stri
 	params.Add("buyToken", endpoint.TokenOut)
 	params.Add("sellAmount", endpoint.SwapAmount)
 
-	if ignoreList != "" {
-		params.Add("excludedSources", ignoreList)
+	// Only add excludedSources if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		// Create handler to get ignore list
+		handler := &ZeroXHandler{}
+		ignoreList, err := handler.GetIgnoreList(endpoint.Network)
+		if err != nil {
+			return "", fmt.Errorf("error getting ignore list: %v", err)
+		}
+		if ignoreList != "" {
+			params.Add("excludedSources", ignoreList)
+		}
 	}
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
-}
-
-// NewZeroXParameterBuilder creates a new 0x parameter builder
-func NewZeroXParameterBuilder() *ZeroXParameterBuilder {
-	return &ZeroXParameterBuilder{}
-}
-
-// BuildParameters builds URL parameters for 0x API requests
-func (b *ZeroXParameterBuilder) BuildParameters(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (url.Values, error) {
-	params := url.Values{}
-	params.Add("chainId", endpoint.Network)
-	params.Add("sellToken", endpoint.TokenIn)
-	params.Add("buyToken", endpoint.TokenOut)
-	params.Add("sellAmount", endpoint.SwapAmount)
-
-	if ignoreList != "" {
-		params.Add("excludedSources", ignoreList)
-	}
-
-	return params, nil
 }

@@ -33,8 +33,8 @@ func checkAllEndpoints() {
 	// Do the actual API checks outside the lock
 	for _, endpoint := range endpoints {
 		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
-			useIgnoreList := true
-			CheckAPI(endpoint, &CheckOptions{UseIgnoreList: &useIgnoreList})
+			// Make both calls: Balancer-only and market price
+			CheckAPI(endpoint, nil) // nil options will trigger both calls
 		})
 		// Add delay between each endpoint check based on endpoint's configured delay
 		time.Sleep(endpoint.Delay)

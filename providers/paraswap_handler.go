@@ -3,6 +3,7 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"go-monitoring/config"
 	"go-monitoring/internal/api"
@@ -93,6 +94,23 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 	return nil
 }
 
+// HandleResponseForMarketPrice processes the Paraswap API response for market price (all sources)
+func (h *ParaswapHandler) HandleResponseForMarketPrice(response *api.APIResponse, endpoint *collector.Endpoint) error {
+	// Parse the JSON response
+	var result ParaswapResponse
+	err := json.Unmarshal(response.Body, &result)
+	if err != nil {
+		return fmt.Errorf("error parsing JSON: %v", err)
+	}
+
+	// For market price, we don't validate exchanges - just extract the amount
+	if result.PriceRoute.DestAmount != "" {
+		endpoint.MarketPrice = result.PriceRoute.DestAmount
+	}
+
+	return nil
+}
+
 // GetIgnoreList returns the list of DEXs to ignore based on the network
 func (h *ParaswapHandler) GetIgnoreList(network string) (string, error) {
 	switch network {
@@ -125,13 +143,36 @@ func NewParaswapURLBuilder() *ParaswapURLBuilder {
 }
 
 // BuildURL builds the complete URL for Paraswap API requests
-func (b *ParaswapURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
-	start := "https://api.paraswap.io/prices/?version=6.2"
-	end := "&otherExchangePrices=true&partner=paraswap.io&userAddress=0x0000000000000000000000000000000000000000&ignoreBadUsdPrice=true"
+func (b *ParaswapURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
+	baseURL := "https://api.paraswap.io/prices/"
 
-	url := fmt.Sprintf("%s&srcToken=%s&destToken=%s&amount=%s&srcDecimals=%d&destDecimals=%d&side=SELL&excludeDEXS=%s&network=%s%s",
-		start, endpoint.TokenIn, endpoint.TokenOut, endpoint.SwapAmount,
-		endpoint.TokenInDecimals, endpoint.TokenOutDecimals, ignoreList, endpoint.Network, end)
+	// Build parameters
+	params := url.Values{}
+	params.Add("version", "6.2")
+	params.Add("srcToken", endpoint.TokenIn)
+	params.Add("destToken", endpoint.TokenOut)
+	params.Add("amount", endpoint.SwapAmount)
+	params.Add("srcDecimals", fmt.Sprintf("%d", endpoint.TokenInDecimals))
+	params.Add("destDecimals", fmt.Sprintf("%d", endpoint.TokenOutDecimals))
+	params.Add("side", "SELL")
+	params.Add("network", endpoint.Network)
+	params.Add("otherExchangePrices", "true")
+	params.Add("partner", "paraswap.io")
+	params.Add("userAddress", "0x0000000000000000000000000000000000000000")
+	params.Add("ignoreBadUsdPrice", "true")
 
-	return url, nil
+	// Only add excludeDEXS if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		// Create handler to get ignore list
+		handler := &ParaswapHandler{}
+		ignoreList, err := handler.GetIgnoreList(endpoint.Network)
+		if err != nil {
+			return "", fmt.Errorf("error getting ignore list: %v", err)
+		}
+		if ignoreList != "" {
+			params.Add("excludeDEXS", ignoreList)
+		}
+	}
+
+	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
 }

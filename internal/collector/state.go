@@ -24,6 +24,7 @@ type Endpoint struct {
 	LastChecked      time.Time
 	Message          string
 	ReturnAmount     string
+	MarketPrice      string
 }
 
 var (
