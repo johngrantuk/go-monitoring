@@ -3,6 +3,7 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"go-monitoring/config"
@@ -136,30 +137,27 @@ func NewOneInchURLBuilder() *OneInchURLBuilder {
 }
 
 // BuildURL builds the complete URL for 1inch API requests
-func (b *OneInchURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
-	start := "https://api.1inch.dev/swap/v6.0/"
-	from := "/quote?src="
-	to := "&dst="
-	amount := "&amount="
+func (b *OneInchURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
+	baseURL := "https://api.1inch.dev/swap/v6.0/" + endpoint.Network + "/quote"
 
-	// Get balancer name for the network
-	handler := &OneInchHandler{}
-	balancerName, err := handler.GetBalancerName(endpoint.Network)
-	if err != nil {
-		return "", fmt.Errorf("error getting 1inch balancer name: %v", err)
+	// Build parameters
+	params := url.Values{}
+	params.Add("src", endpoint.TokenIn)
+	params.Add("dst", endpoint.TokenOut)
+	params.Add("amount", endpoint.SwapAmount)
+
+	// Only add protocol filtering if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		params.Add("includeProtocols", "true")
+
+		// Get balancer name for the network
+		handler := &OneInchHandler{}
+		balancerName, err := handler.GetBalancerName(endpoint.Network)
+		if err != nil {
+			return "", fmt.Errorf("error getting 1inch balancer name: %v", err)
+		}
+		params.Add("protocols", balancerName)
 	}
 
-	var builder strings.Builder
-	builder.WriteString(start)
-	builder.WriteString(endpoint.Network)
-	builder.WriteString(from)
-	builder.WriteString(endpoint.TokenIn)
-	builder.WriteString(to)
-	builder.WriteString(endpoint.TokenOut)
-	builder.WriteString(amount)
-	builder.WriteString(endpoint.SwapAmount)
-	builder.WriteString("&includeProtocols=true&protocols=")
-	builder.WriteString(balancerName)
-
-	return builder.String(), nil
+	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
 }

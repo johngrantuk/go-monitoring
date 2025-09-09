@@ -15,7 +15,6 @@ import (
 type ProviderConfig struct {
 	Handler            api.ResponseHandler
 	URLBuilder         api.URLBuilder
-	ParameterBuilder   api.ParameterBuilder
 	RequestBodyBuilder api.RequestBodyBuilder
 	BaseURL            string
 	APIKeyEnvVar       string
@@ -25,7 +24,7 @@ type ProviderConfig struct {
 
 // CheckOptions provides optional configuration for provider checks
 type CheckOptions struct {
-	UseIgnoreList *bool // Optional override for ignore list usage
+	IsBalancerSourceOnly *bool // Optional override for Balancer source only usage
 }
 
 // ProviderRegistry manages all registered providers
@@ -99,14 +98,14 @@ func (r *ProviderRegistry) checkWithGenericClient(endpoint *collector.Endpoint, 
 	}
 
 	// Use options if provided, otherwise default to true
-	useIgnoreList := false // Default behavior
-	if checkOptions != nil && checkOptions.UseIgnoreList != nil {
-		useIgnoreList = *checkOptions.UseIgnoreList
+	isBalancerSourceOnly := true // Default behavior - most providers should use Balancer sources only
+	if checkOptions != nil && checkOptions.IsBalancerSourceOnly != nil {
+		isBalancerSourceOnly = *checkOptions.IsBalancerSourceOnly
 	}
 	// Configure request options
 	requestOptions := api.RequestOptions{
-		UseIgnoreList: useIgnoreList,
-		CustomHeaders: headers,
+		IsBalancerSourceOnly: isBalancerSourceOnly,
+		CustomHeaders:        headers,
 	}
 
 	client.CheckAPI(endpoint, config.Handler, config.URLBuilder, config.RequestBodyBuilder, config.UsePOST, requestOptions)

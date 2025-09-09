@@ -79,7 +79,7 @@ func (h *OdosHandler) GetIgnoreList(network string) (string, error) {
 type OdosURLBuilder struct{}
 
 // BuildURL constructs the URL for Odos API requests
-func (b *OdosURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *OdosURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	return "https://api.odos.xyz/sor/quote/v2", nil
 }
 
@@ -87,7 +87,7 @@ func (b *OdosURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList strin
 type OdosRequestBodyBuilder struct{}
 
 // BuildRequestBody constructs the JSON request body for Odos API requests
-func (b *OdosRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) ([]byte, error) {
+func (b *OdosRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoint, options api.RequestOptions) ([]byte, error) {
 	requestBody := OdosQuoteRequest{
 		ChainID: endpoint.Network,
 		InputTokens: []struct {
@@ -108,8 +108,12 @@ func (b *OdosRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoint, 
 				TokenAddress: endpoint.TokenOut,
 			},
 		},
-		SourceWhitelist: []string{"Balancer V3 Gyro", "Balancer V3 Stable", "Balancer V3 Weighted", "Balancer V3 StableSurge", "Balancer V3 reCLAMM"},
-		UserAddr:        "0x47E2D28169738039755586743E2dfCF3bd643f86",
+		UserAddr: "0x47E2D28169738039755586743E2dfCF3bd643f86",
+	}
+
+	// Only add source whitelist if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		requestBody.SourceWhitelist = []string{"Balancer V3 Gyro", "Balancer V3 Stable", "Balancer V3 Weighted", "Balancer V3 StableSurge", "Balancer V3 reCLAMM"}
 	}
 
 	return json.Marshal(requestBody)

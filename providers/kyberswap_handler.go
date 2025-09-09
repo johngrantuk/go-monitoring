@@ -241,7 +241,7 @@ func NewKyberSwapURLBuilder() *KyberSwapURLBuilder {
 }
 
 // BuildURL builds the complete URL for KyberSwap API requests
-func (b *KyberSwapURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *KyberSwapURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	// Get chain name for the API endpoint
 	handler := &KyberSwapHandler{}
 	chainName := handler.GetChainName(endpoint.Network)
@@ -249,18 +249,21 @@ func (b *KyberSwapURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList 
 	// Build the base API URL
 	baseURL := fmt.Sprintf("https://aggregator-api.kyberswap.com/%s/api/v1/routes", chainName)
 
-	// Determine included sources based on endpoint name
-	includedSources, err := handler.GetIncludedSources(endpoint.Name)
-	if err != nil {
-		return "", fmt.Errorf("error getting included sources: %v", err)
-	}
-
 	// Build parameters
 	params := url.Values{}
 	params.Add("tokenIn", endpoint.TokenIn)
 	params.Add("tokenOut", endpoint.TokenOut)
 	params.Add("amountIn", endpoint.SwapAmount)
-	params.Add("includedSources", includedSources)
+
+	// Only add source filtering if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		// Determine included sources based on endpoint name
+		includedSources, err := handler.GetIncludedSources(endpoint.Name)
+		if err != nil {
+			return "", fmt.Errorf("error getting included sources: %v", err)
+		}
+		params.Add("includedSources", includedSources)
+	}
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
 }

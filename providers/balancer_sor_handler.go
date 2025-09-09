@@ -149,7 +149,7 @@ func NewBalancerSORURLBuilder() *BalancerSORURLBuilder {
 }
 
 // BuildURL builds the complete URL for Balancer SOR API requests
-func (b *BalancerSORURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *BalancerSORURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	// Balancer SOR uses a fixed GraphQL endpoint
 	return "https://api-v3.balancer.fi/", nil
 }
@@ -160,7 +160,7 @@ func NewBalancerSORRequestBodyBuilder() *BalancerSORRequestBodyBuilder {
 }
 
 // BuildRequestBody builds the GraphQL query for Balancer SOR API requests
-func (b *BalancerSORRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) ([]byte, error) {
+func (b *BalancerSORRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoint, options api.RequestOptions) ([]byte, error) {
 	// Convert network to Balancer chain format
 	chain, err := b.convertNetworkToChain(endpoint.Network)
 	if err != nil {

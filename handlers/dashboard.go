@@ -78,8 +78,8 @@ func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Use the collector to update the endpoint directly
 	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
-		useIgnoreList := true
-		monitor.CheckAPI(endpoint, &monitor.CheckOptions{UseIgnoreList: &useIgnoreList})
+		isBalancerSourceOnly := true
+		monitor.CheckAPI(endpoint, &monitor.CheckOptions{IsBalancerSourceOnly: &isBalancerSourceOnly})
 	})
 
 	if !updated {

@@ -33,8 +33,8 @@ func checkAllEndpoints() {
 	// Do the actual API checks outside the lock
 	for _, endpoint := range endpoints {
 		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
-			useIgnoreList := true
-			CheckAPI(endpoint, &CheckOptions{UseIgnoreList: &useIgnoreList})
+			isBalancerSourceOnly := true
+			CheckAPI(endpoint, &CheckOptions{IsBalancerSourceOnly: &isBalancerSourceOnly})
 		})
 		// Add delay between each endpoint check based on endpoint's configured delay
 		time.Sleep(endpoint.Delay)

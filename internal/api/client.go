@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -17,8 +16,8 @@ import (
 
 // RequestOptions contains configuration for API requests
 type RequestOptions struct {
-	UseIgnoreList bool
-	CustomHeaders map[string]string
+	IsBalancerSourceOnly bool
+	CustomHeaders        map[string]string
 }
 
 // APIResponse represents a generic API response
@@ -41,17 +40,12 @@ type CustomResponseHandler interface {
 
 // URLBuilder defines how to build URLs for different providers
 type URLBuilder interface {
-	BuildURL(endpoint *collector.Endpoint, ignoreList string, options RequestOptions) (string, error)
-}
-
-// ParameterBuilder defines how to build URL parameters for different providers
-type ParameterBuilder interface {
-	BuildParameters(endpoint *collector.Endpoint, ignoreList string, options RequestOptions) (url.Values, error)
+	BuildURL(endpoint *collector.Endpoint, options RequestOptions) (string, error)
 }
 
 // RequestBodyBuilder defines how to build JSON request bodies for POST requests
 type RequestBodyBuilder interface {
-	BuildRequestBody(endpoint *collector.Endpoint, ignoreList string, options RequestOptions) ([]byte, error)
+	BuildRequestBody(endpoint *collector.Endpoint, options RequestOptions) ([]byte, error)
 }
 
 // APIClient handles HTTP requests and provides common functionality
@@ -163,29 +157,18 @@ func (c *APIClient) CheckAPI(endpoint *collector.Endpoint, handler ResponseHandl
 	// Update endpoint timestamp
 	endpoint.LastChecked = time.Now()
 
-	// Get ignore list if needed
-	var ignoreList string
-	var err error
-	if options.UseIgnoreList {
-		ignoreList, err = handler.GetIgnoreList(endpoint.Network)
-		if err != nil {
-			c.handleError(endpoint, "error", fmt.Sprintf("Error getting ignore list: %v", err))
-			return
-		}
-	}
-
 	var response *APIResponse
 
 	if usePOST && requestBodyBuilder != nil {
 		// Build the request body for POST request
-		requestBody, err := requestBodyBuilder.BuildRequestBody(endpoint, ignoreList, options)
+		requestBody, err := requestBodyBuilder.BuildRequestBody(endpoint, options)
 		if err != nil {
 			c.handleError(endpoint, "error", fmt.Sprintf("Error building request body: %v", err))
 			return
 		}
 
 		// Build the URL using the provider-specific builder
-		fullURL, err := urlBuilder.BuildURL(endpoint, ignoreList, options)
+		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
 			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
 			return
@@ -200,7 +183,7 @@ func (c *APIClient) CheckAPI(endpoint *collector.Endpoint, handler ResponseHandl
 		}
 	} else {
 		// Build the URL using the provider-specific builder
-		fullURL, err := urlBuilder.BuildURL(endpoint, ignoreList, options)
+		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
 			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
 			return

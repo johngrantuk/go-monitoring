@@ -157,7 +157,7 @@ func NewHyperBloomURLBuilder() *HyperBloomURLBuilder {
 }
 
 // BuildURL builds the complete URL for HyperBloom API requests
-func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList string, options api.RequestOptions) (string, error) {
+func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.RequestOptions) (string, error) {
 	baseURL := "https://api.hyperbloom.xyz/swap/v1/price"
 
 	// Build parameters
@@ -165,7 +165,11 @@ func (b *HyperBloomURLBuilder) BuildURL(endpoint *collector.Endpoint, ignoreList
 	params.Add("sellToken", endpoint.TokenIn)
 	params.Add("buyToken", endpoint.TokenOut)
 	params.Add("sellAmount", endpoint.SwapAmount)
-	params.Add("includedSources", "BalancerV3")
+
+	// Only add source filtering if we're filtering for Balancer sources only
+	if options.IsBalancerSourceOnly {
+		params.Add("includedSources", "BalancerV3")
+	}
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
 }
