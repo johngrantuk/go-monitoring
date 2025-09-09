@@ -111,22 +111,10 @@ func (h *ParaswapHandler) HandleResponseForMarketPrice(response *api.APIResponse
 	return nil
 }
 
-// GetIgnoreList returns the list of DEXs to ignore based on the network
+// GetIgnoreList returns an empty string since we now use includeDEXS instead of excludeDEXS
 func (h *ParaswapHandler) GetIgnoreList(network string) (string, error) {
-	switch network {
-	case "100": // Gnosis
-		return "WooFiV2,AaveV3,AaveV3Stata,AaveV3StataV2,BalancerV2,CurveV1,CurveV1StableNg,CurveV2,HoneySwap,OkuTradeV3,sDAI,SushiSwap,SwaprV2,SwaprV3,Wxdai", nil
-	case "42161": // Arbitrum
-		return "WooFiV2,AaveV3,AaveV3Stata,AaveV3StataV2,AngleStakedStableEUR,AngleStakedStableUSD,AngleTransmuter,AugustusRFQ,BalancerV2,Bebop,Cables,Camelot,CamelotV3,Chronos,ChronosV3,CurveV1,CurveV1Factory,CurveV1StableNg,CurveV2,Dexalot,DODOV1,DODOV2,FluidDex,GMX,Hashflow,MaverickV2,PancakeSwapV2,PancakeswapV3,ParaSwapLimitOrders,Ramses,RamsesV2,SolidlyV3,SparkPsm,SushiSwap,SushiSwapV3,SwaapV2,Synapse,TraderJoeV2.1,TraderJoeV2.2,UniswapV2,UniswapV3,UniswapV4,Weth,Wombat,WooFiV2,wUSDM,Zyberswap,ZyberSwapV3", nil
-	case "8453": // Base
-		return "WooFiV2,AaveV3,AaveV3Stata,AaveV3StataV2,Aerodrome,AerodromeSlipstream,Alien,AlienBaseV3,AngleStakedStableUSD,AngleTransmuter,BalancerV2,BaseSwap,BaseswapV3,Bebop,CurveV1Factory,CurveV1StableNg,DackieSwap,DackieSwapV3,Dexalot,Equalizer,Hashflow,Infusion,MaverickV1,MaverickV2,PancakeswapV3,RocketSwap,SharkSwap,SolidlyV3,SoSwap,SparkPsm,SushiSwapV3,SwaapV2,SwapBased,SwapBasedV3,UniswapV2,UniswapV3,,UniswapV4,Velocimeter,Weth,Wombat,WooFiV2,wUSDM", nil
-	case "1": // Ethereum Mainnet
-		return "RingV2,WooFiV2,AaveGsm,AaveV2,AaveV3,AaveV3Stata,AaveV3StataV2,AngleStakedStableEUR,AngleStakedStableUSD,AngleTransmuter,AugustusRFQ,BalancerV1,BalancerV2,Bancor,Bebop,Compound,ConcentratorArusd,CurveV1,CurveV1Factory,CurveV1StableNg,CurveV2,DaiUsds,DefiSwap,DODOV1,DODOV2,Ekubo,EtherFi,FluidDex,FxProtocolRusd,Hashflow,IdleDao,KyberDmm,Lido,LinkSwap,LitePsm,MakerPsm,MaverickV1,MaverickV2,MkrSky,MWrappedM,OSwap,PancakeSwapV2,PancakeswapV3,ParaSwapLimitOrders,PolygonMigrator,ShibaSwap,Smoothy,SolidlyV2,SolidlyV3,Spark,Stader,StkGHO,sUSDS,SushiSwap,SushiSwapV3,SwaapV2,Swell,Swerve,Synapse,Synthetix,TraderJoeV2.1,UniswapV2,UniswapV3,UniswapV4,UsualBond,UsualMUsd0,UsualMWrappedM,UsualPP,Verse,Weth,Wombat,WrappedMM,wstETH,wUSDL,wUSDM", nil
-	case "43114": // Avalanche
-		return "Baguette,ArenaDexV2,ElkFinance,PharaohV1,LydiaFinance,CanarySwap,PangolinV3,PangolinSwap,WooFiV2,GMX,TraderJoe,TraderJoeV2.2,Dexalot,PharaohV2,AaveGsm,AaveV2,AaveV3,AaveV3Stata,AaveV3StataV2,AngleStakedStableEUR,AngleStakedStableUSD,AngleTransmuter,AugustusRFQ,BalancerV1,BalancerV2,Bancor,Bebop,Compound,ConcentratorArusd,CurveV1,CurveV1Factory,CurveV1StableNg,CurveV2,DaiUsds,DefiSwap,DODOV1,DODOV2,Ekubo,EtherFi,FluidDex,FxProtocolRusd,Hashflow,IdleDao,KyberDmm,Lido,LinkSwap,LitePsm,MakerPsm,MaverickV1,MaverickV2,MkrSky,MWrappedM,OSwap,PancakeSwapV2,PancakeswapV3,ParaSwapLimitOrders,PolygonMigrator,ShibaSwap,Smoothy,SolidlyV2,SolidlyV3,Spark,Stader,StkGHO,sUSDS,SushiSwap,SushiSwapV3,SwaapV2,Swell,Swerve,Synapse,Synthetix,TraderJoeV2.1,UniswapV2,UniswapV3,UniswapV4,UsualBond,UsualMUsd0,UsualMWrappedM,UsualPP,Verse,Weth,Wombat,WrappedMM,wstETH,wUSDL,wUSDM", nil
-	default:
-		return "", fmt.Errorf("unsupported network: %s", network)
-	}
+	// Return empty string since we use includeDEXS parameter instead
+	return "", nil
 }
 
 // handleError updates endpoint status and sends notifications for Paraswap-specific errors
@@ -161,17 +149,9 @@ func (b *ParaswapURLBuilder) BuildURL(endpoint *collector.Endpoint, options api.
 	params.Add("userAddress", "0x0000000000000000000000000000000000000000")
 	params.Add("ignoreBadUsdPrice", "true")
 
-	// Only add excludeDEXS if we're filtering for Balancer sources only
+	// Only add includeDEXS if we're filtering for Balancer sources only
 	if options.IsBalancerSourceOnly {
-		// Create handler to get ignore list
-		handler := &ParaswapHandler{}
-		ignoreList, err := handler.GetIgnoreList(endpoint.Network)
-		if err != nil {
-			return "", fmt.Errorf("error getting ignore list: %v", err)
-		}
-		if ignoreList != "" {
-			params.Add("excludeDEXS", ignoreList)
-		}
+		params.Add("includeDEXS", "BalancerV3")
 	}
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode()), nil
