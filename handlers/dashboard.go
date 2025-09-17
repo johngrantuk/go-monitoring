@@ -143,8 +143,31 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			.solver-row {
 				background-color: #f9f9f9;
 			}
+			.sortable-header {
+				cursor: pointer;
+				user-select: none;
+				position: relative;
+				padding-right: 20px;
+			}
+			.sortable-header:hover {
+				background-color: #e0e0e0;
+			}
+			.sort-arrow {
+				position: absolute;
+				right: 5px;
+				top: 50%;
+				transform: translateY(-50%);
+				font-size: 12px;
+				color: #666;
+			}
+			.sort-arrow.active {
+				color: #000;
+				font-weight: bold;
+			}
 		</style>
 		<script>
+			let currentSort = { column: 4, direction: 'desc' }; // Default sort by Market Price desc
+			
 			function checkEndpoint(name) {
 				fetch('/check/' + name, {
 					method: 'POST',
@@ -152,9 +175,96 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 					window.location.reload();
 				});
 			}
+			
+			function sortTable(column) {
+				const table = document.querySelector('table');
+				const tbody = table.querySelector('tbody');
+				const allRows = Array.from(tbody.querySelectorAll('tr'));
+				
+				// Determine sort direction
+				if (currentSort.column === column) {
+					currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+				} else {
+					currentSort.column = column;
+					currentSort.direction = 'desc';
+				}
+				
+				// Update arrow indicators
+				document.querySelectorAll('.sort-arrow').forEach(arrow => {
+					arrow.classList.remove('active');
+					arrow.textContent = '↕';
+				});
+				
+				const activeArrow = document.getElementById('arrow-' + column);
+				activeArrow.classList.add('active');
+				activeArrow.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+				
+				// Group rows by base name rows
+				const groups = [];
+				let currentGroup = null;
+				
+				allRows.forEach(row => {
+					if (row.classList.contains('base-name-row')) {
+						currentGroup = { header: row, solvers: [] };
+						groups.push(currentGroup);
+					} else if (row.classList.contains('solver-row') && currentGroup) {
+						currentGroup.solvers.push(row);
+					}
+				});
+				
+				// Sort solver rows within each group
+				groups.forEach(group => {
+					group.solvers.sort((a, b) => {
+						const aVal = a.cells[column].textContent.trim();
+						const bVal = b.cells[column].textContent.trim();
+						
+						// Handle N/A values
+						if (aVal === 'N/A' && bVal === 'N/A') return 0;
+						if (aVal === 'N/A') return 1;
+						if (bVal === 'N/A') return -1;
+						
+						// Parse as BigInt for proper large number comparison
+						let aNum, bNum;
+						try {
+							aNum = BigInt(aVal);
+							bNum = BigInt(bVal);
+						} catch (e) {
+							// Fallback to 0 if parsing fails
+							aNum = BigInt(0);
+							bNum = BigInt(0);
+						}
+						
+						if (currentSort.direction === 'asc') {
+							return aNum < bNum ? -1 : aNum > bNum ? 1 : 0;
+						} else {
+							return aNum > bNum ? -1 : aNum < bNum ? 1 : 0;
+						}
+					});
+				});
+				
+				// Clear tbody and re-append sorted groups
+				tbody.innerHTML = '';
+				groups.forEach(group => {
+					tbody.appendChild(group.header);
+					group.solvers.forEach(solver => {
+						tbody.appendChild(solver);
+					});
+				});
+			}
+			
+			// Initialize default sort on page load
+			document.addEventListener('DOMContentLoaded', function() {
+				// Small delay to ensure all content is rendered
+				setTimeout(function() {
+					// Force the sort state and apply sorting
+					currentSort.column = 4;
+					currentSort.direction = 'asc';
+					sortTable(4); // Sort by Market Price desc by default
+				}, 100);
+			});
 		</script>
 	</head><body><h1>API Monitor</h1>`)
-	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Balancer Price</th><th>Market Price</th><th>Last Checked</th><th>Actions</th></tr>")
+	fmt.Fprintln(w, "<table border='1'><thead><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th class='sortable-header' onclick='sortTable(3)'>Balancer Price<span class='sort-arrow' id='arrow-3'>↕</span></th><th class='sortable-header' onclick='sortTable(4)'>Market Price<span class='sort-arrow' id='arrow-4'>↕</span></th><th>Last Checked</th><th>Actions</th></tr></thead><tbody>")
 
 	for _, baseName := range baseNames {
 		// Add base name row with token info
@@ -271,5 +381,5 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				endpoint.Name)
 		}
 	}
-	fmt.Fprintln(w, "</table></body></html>")
+	fmt.Fprintln(w, "</tbody></table></body></html>")
 }
