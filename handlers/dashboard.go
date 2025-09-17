@@ -115,6 +115,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			.status-down { background-color: #FFB6C1; }
 			.status-unknown { background-color: #FFA500; }
 			.status-disabled { background-color: #D3D3D3; }
+			.highest-value { background-color: #90EE90; font-weight: bold; }
 			table { border-collapse: collapse; width: 100%; }
 			th, td { padding: 8px; text-align: left; }
 			.name-column { white-space: nowrap; }
@@ -153,7 +154,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		</script>
 	</head><body><h1>API Monitor</h1>`)
-	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Return Amount</th><th>Market Price</th><th>Last Checked</th><th>Actions</th></tr>")
+	fmt.Fprintln(w, "<table border='1'><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th>Balancer Price</th><th>Market Price</th><th>Last Checked</th><th>Actions</th></tr>")
 
 	for _, baseName := range baseNames {
 		// Add base name row with token info
@@ -223,12 +224,48 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				marketPriceDisplay = endpoint.MarketPrice
 			}
 
-			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
+			// Compare return amount vs market price within this row and highlight the larger value
+			returnAmountClass := ""
+			marketPriceClass := ""
+
+			// Parse return amount
+			returnAmountStr := endpoint.ReturnAmount
+			if returnAmountStr == "" || returnAmountStr == "N/A" {
+				returnAmountStr = "0"
+			}
+			returnAmountBig := new(big.Int)
+			if _, ok := returnAmountBig.SetString(returnAmountStr, 10); !ok {
+				returnAmountBig.SetString("0", 10)
+			}
+
+			// Parse market price
+			marketPriceStr := endpoint.MarketPrice
+			if marketPriceStr == "" || marketPriceStr == "N/A" {
+				marketPriceStr = "0"
+			}
+			marketPriceBig := new(big.Int)
+			if _, ok := marketPriceBig.SetString(marketPriceStr, 10); !ok {
+				marketPriceBig.SetString("0", 10)
+			}
+
+			// Compare and highlight the larger value (only if both are valid non-zero values)
+			if returnAmountBig.Cmp(big.NewInt(0)) > 0 || marketPriceBig.Cmp(big.NewInt(0)) > 0 {
+				if returnAmountBig.Cmp(marketPriceBig) > 0 {
+					returnAmountClass = " class='highest-value'"
+				} else if marketPriceBig.Cmp(returnAmountBig) > 0 {
+					marketPriceClass = " class='highest-value'"
+				}
+				// If they're equal, don't highlight either
+			}
+
+			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td%s>%s</td><td%s>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
 				endpoint.SolverName,
 				statusClass,
 				endpoint.LastStatus,
 				endpoint.Message,
+				returnAmountClass,
 				returnAmountDisplay,
+				marketPriceClass,
 				marketPriceDisplay,
 				formatTimeAgo(endpoint.LastChecked),
 				endpoint.Name)
