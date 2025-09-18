@@ -112,6 +112,8 @@ func (r *ProviderRegistry) checkWithGenericClient(endpoint *collector.Endpoint, 
 			headers["Content-Type"] = "application/json"
 		case "hyperbloom":
 			headers["api-key"] = apiKey
+		case "barter":
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 		}
 	}
 
@@ -165,6 +167,8 @@ func (r *ProviderRegistry) checkWithGenericClientForMarketPrice(endpoint *collec
 			headers["Content-Type"] = "application/json"
 		case "hyperbloom":
 			headers["api-key"] = apiKey
+		case "barter":
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", apiKey)
 		}
 	}
 
@@ -199,6 +203,10 @@ func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
 		return strings.Contains(endpoint.Name, "reCLAMM")
 	case "odos":
 		return strings.Contains(endpoint.Name, "Quant")
+	case "barter":
+		return strings.Contains(endpoint.Name, "StableSurge") ||
+			strings.Contains(endpoint.Name, "Quant") ||
+			strings.Contains(endpoint.Name, "reCLAMM")
 	default:
 		return false
 	}
@@ -224,6 +232,14 @@ func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
 		message = "KyberSwap reCLAMM integration WIP"
 	case "odos":
 		message = "Odos QuantAMM integration WIP"
+	case "barter":
+		if strings.Contains(endpoint.Name, "StableSurge") {
+			message = "Barter StableSurge integration WIP"
+		} else if strings.Contains(endpoint.Name, "Quant") {
+			message = "Barter QuantAMM integration WIP"
+		} else if strings.Contains(endpoint.Name, "reCLAMM") {
+			message = "Barter reCLAMM integration WIP"
+		}
 	}
 
 	endpoint.LastStatus = "info"
@@ -293,6 +309,18 @@ func InitializeRegistry() {
 		UsePOST:            true,
 		CustomHeaders: map[string]string{
 			"Content-Type": "application/json",
+		},
+	})
+
+	GlobalRegistry.RegisterProvider("barter", ProviderConfig{
+		Handler:            providers.NewBarterHandler(),
+		URLBuilder:         providers.NewBarterURLBuilder(),
+		RequestBodyBuilder: providers.NewBarterRequestBodyBuilder(),
+		UsePOST:            true,
+		APIKeyEnvVar:       "BARTER_API_KEY",
+		CustomHeaders: map[string]string{
+			"Content-Type": "application/json",
+			"X-Request-Id": "123", // Default request ID, can be made dynamic if needed
 		},
 	})
 }

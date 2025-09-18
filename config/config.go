@@ -263,6 +263,11 @@ var RouteSolvers = []RouteSolver{
 		Type:              "balancer_sor",
 		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM
 	},
+	{
+		Name:              "Barter",
+		Type:              "barter",
+		SupportedNetworks: []string{"1", "8453"}, // Mainnet, Base
+	},
 }
 
 // GetEnabledRouteSolvers returns only the enabled route solvers based on environment variables
