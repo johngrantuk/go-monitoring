@@ -224,6 +224,28 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "100000000000", // 100k USDT
 		ExpectedNoHops:   1,
 	},
+	{
+		Name:             "Plasma-Boosted-StableSurge-(WETH/weETH)",
+		Network:          "9745",
+		TokenIn:          "0x9895D81bB462A195b4922ED7De0e3ACD007c32CB", // WETH
+		TokenOut:         "0xa3d68b74bf0528fdd07263c60d6488749044914b", // weETH
+		TokenInDecimals:  18,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0xda51975d78cb172b46d7292cec9fa9e74723ef3b",
+		SwapAmount:       "100000000000000000000", // 100 WETH
+		ExpectedNoHops:   1,
+	},
+	{
+		Name:             "Plasma-reCLAMM-(WXPL/USDT0)",
+		Network:          "9745",
+		TokenIn:          "0x6100e367285b01f48d07953803a2d8dca5d19873", // WXPL
+		TokenOut:         "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb", // USDT0
+		TokenInDecimals:  18,
+		TokenOutDecimals: 6,
+		ExpectedPool:     "0xe14ba497a7c51f34896d327ec075f3f18210a270",
+		SwapAmount:       "50000000000000000000000", // 50k WXPL
+		ExpectedNoHops:   1,
+	},
 }
 
 // RouteSolvers contains all available route solver configurations
@@ -241,7 +263,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "0x",
 		Type:              "0x",
-		SupportedNetworks: []string{"1", "8453", "42161", "43114"}, // Mainnet, Base, Arbitrum, Avalanche
+		SupportedNetworks: []string{"1", "8453", "42161", "43114", "9745"}, // Mainnet, Base, Arbitrum, Avalanche, Plasma
 	},
 	{
 		Name:              "Odos",
@@ -251,7 +273,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "KyberSwap",
 		Type:              "kyberswap",
-		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999"}, // All supported networks
+		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999", "9745"}, // All supported networks
 	},
 	{
 		Name:              "HyperBloom",
@@ -261,7 +283,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "Balancer SOR",
 		Type:              "balancer_sor",
-		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM
+		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999", "9745"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM, Plasma
 	},
 	{
 		Name:              "Barter",

@@ -225,6 +225,8 @@ func (h *KyberSwapHandler) GetChainName(chainID string) string {
 		return "ronin"
 	case "999":
 		return "hyperevm"
+	case "9745":
+		return "plasma"
 	default:
 		return "ethereum" // default fallback
 	}
