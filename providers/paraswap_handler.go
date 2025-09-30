@@ -54,16 +54,21 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 		return fmt.Errorf("error parsing JSON: %v", err)
 	}
 
-	// Check if there's an error in the response
-	if result.Error != "" {
-		h.handleError(endpoint, "down", fmt.Sprintf("API error: %s", result.Error), string(response.Body))
-		return fmt.Errorf("API error: %s", result.Error)
-	}
-
 	// Check if priceRoute exists and has bestRoute
 	if len(result.PriceRoute.BestRoute) == 0 {
+		// If there's an error and no valid route, treat as error
+		if result.Error != "" {
+			h.handleError(endpoint, "down", fmt.Sprintf("API error: %s", result.Error), string(response.Body))
+			return fmt.Errorf("API error: %s", result.Error)
+		}
 		h.handleError(endpoint, "down", "No best route found", string(response.Body))
 		return fmt.Errorf("no best route found")
+	}
+
+	// If there's an error but we have a valid route, log it but don't treat as failure
+	if result.Error != "" {
+		fmt.Printf("%s[WARNING]%s %s: API returned error but has valid route: %s\n", config.ColorYellow, config.ColorReset, endpoint.Name, result.Error)
+		endpoint.Message = fmt.Sprintf("Warning: %s (but route is valid)", result.Error)
 	}
 
 	// Check if the route uses the expected pool (Balancer V3)
