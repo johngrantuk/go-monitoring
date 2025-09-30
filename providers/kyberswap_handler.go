@@ -112,6 +112,8 @@ func (h *KyberSwapHandler) HandleResponse(response *api.APIResponse, endpoint *c
 		expectedSource = "balancer-v3-stable"
 	case strings.Contains(endpoint.Name, "Gyro"):
 		expectedSource = "balancer-v3-eclp"
+	case strings.Contains(endpoint.Name, "reCLAMM"):
+		expectedSource = "balancer-v3-reclamm"
 	default:
 		h.handleError(endpoint, "down", "unsupported pool type for validation", string(response.Body))
 		return fmt.Errorf("unsupported pool type for validation")
@@ -241,6 +243,8 @@ func (h *KyberSwapHandler) GetIncludedSources(endpointName string) (string, erro
 		return "balancer-v3-stable", nil
 	case strings.Contains(endpointName, "Gyro"):
 		return "balancer-v3-eclp", nil
+	case strings.Contains(endpointName, "reCLAMM"):
+		return "balancer-v3-reclamm", nil
 	default:
 		return "", fmt.Errorf("unsupported pool type")
 	}

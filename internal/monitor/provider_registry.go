@@ -199,8 +199,6 @@ func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
 			strings.Contains(endpoint.Name, "Quant") ||
 			strings.Contains(endpoint.Name, "reCLAMM") ||
 			endpoint.Network == "43114"
-	case "kyberswap":
-		return strings.Contains(endpoint.Name, "reCLAMM")
 	case "odos":
 		return strings.Contains(endpoint.Name, "Quant")
 	case "barter":
@@ -228,8 +226,6 @@ func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
 		} else if endpoint.Network == "43114" {
 			message = "1inch network support WIP"
 		}
-	case "kyberswap":
-		message = "KyberSwap reCLAMM integration WIP"
 	case "odos":
 		message = "Odos QuantAMM integration WIP"
 	case "barter":
