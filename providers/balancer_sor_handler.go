@@ -199,24 +199,49 @@ func (b *BalancerSORRequestBodyBuilder) BuildRequestBody(endpoint *collector.End
 	}
 
 	// Build the GraphQL query
-	query := fmt.Sprintf(`{
-		sorGetSwapPaths(
-			chain: %s
-			swapAmount: "%s"
-			swapType: EXACT_IN
-			tokenIn: "%s"
-			tokenOut: "%s"
-			considerPoolsWithHooks: true
-			useProtocolVersion: 3
-		) {
-			swapAmount
-			returnAmount
-			paths {
-				pools
-				isBuffer
+	var query string
+	if options.IsBalancerSourceOnly {
+		// When IsBalancerSourceOnly is true, add poolIds parameter
+		query = fmt.Sprintf(`{
+			sorGetSwapPaths(
+				chain: %s
+				swapAmount: "%s"
+				swapType: EXACT_IN
+				tokenIn: "%s"
+				tokenOut: "%s"
+				considerPoolsWithHooks: true
+				useProtocolVersion: 3
+				poolIds: ["%s"]
+			) {
+				swapAmount
+				returnAmount
+				paths {
+					pools
+					isBuffer
+				}
 			}
-		}
-	}`, chain, decimalAmount, endpoint.TokenIn, endpoint.TokenOut)
+		}`, chain, decimalAmount, endpoint.TokenIn, endpoint.TokenOut, endpoint.ExpectedPool)
+	} else {
+		// Default query without poolIds
+		query = fmt.Sprintf(`{
+			sorGetSwapPaths(
+				chain: %s
+				swapAmount: "%s"
+				swapType: EXACT_IN
+				tokenIn: "%s"
+				tokenOut: "%s"
+				considerPoolsWithHooks: true
+				useProtocolVersion: 3
+			) {
+				swapAmount
+				returnAmount
+				paths {
+					pools
+					isBuffer
+				}
+			}
+		}`, chain, decimalAmount, endpoint.TokenIn, endpoint.TokenOut)
+	}
 
 	// Create the GraphQL request body
 	requestBody := map[string]string{

@@ -166,7 +166,7 @@ var BaseEndpoints = []BaseEndpoint{
 		TokenInDecimals:  6,
 		TokenOutDecimals: 6,
 		ExpectedPool:     "0x31ae873544658654ce767bde179fd1bbcb84850b",
-		SwapAmount:       "1000000000000",
+		SwapAmount:       "100000000000",
 		ExpectedNoHops:   1,
 	},
 	{
