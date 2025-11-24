@@ -192,13 +192,13 @@ var BaseEndpoints = []BaseEndpoint{
 		ExpectedNoHops:   1,
 	},
 	{
-		Name:             "Base-reCLAMM-(WETH/COW)",
+		Name:             "Base-reCLAMM-(WETH/cbBTC)",
 		Network:          "8453",
 		TokenIn:          "0x4200000000000000000000000000000000000006", // WETH
-		TokenOut:         "0xc694a91e6b071bf030a18bd3053a7fe09b6dae69", // COW
+		TokenOut:         "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf", // cbBTC
 		TokenInDecimals:  18,
-		TokenOutDecimals: 18,
-		ExpectedPool:     "0xff028c1ec4559d3aa2b0859aa582925b5cc28069",
+		TokenOutDecimals: 8,
+		ExpectedPool:     "0x19aeb8168d921bb069c6771bbaff7c09116720d0",
 		SwapAmount:       "1000000000000000000", // 1 WETH
 		ExpectedNoHops:   1,
 	},
@@ -214,13 +214,13 @@ var BaseEndpoints = []BaseEndpoint{
 		ExpectedNoHops:   1,
 	},
 	{
-		Name:             "Hyper-Boosted-StableSurge-(USDT/USR)",
+		Name:             "Hyper-Boosted-StableSurge-(USDT/USDXL)",
 		Network:          "999",
 		TokenIn:          "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb", // USDT
-		TokenOut:         "0x0ad339d66bf4aed5ce31c64bc37b3244b6394a77", // USR
+		TokenOut:         "0xca79db4b49f608ef54a5cb813fbed3a6387bc645", // LastUSD
 		TokenInDecimals:  6,
 		TokenOutDecimals: 18,
-		ExpectedPool:     "0x8207c7541ce31b38dbd46890f2a832cf1ef7c512",
+		ExpectedPool:     "0xba0163e18b8b6236d5046841e698f2f2d89bd4bd",
 		SwapAmount:       "100000000000", // 100k USDT
 		ExpectedNoHops:   1,
 	},
