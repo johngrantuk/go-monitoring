@@ -201,10 +201,6 @@ func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
 			endpoint.Network == "43114"
 	case "odos":
 		return strings.Contains(endpoint.Name, "Quant")
-	case "barter":
-		return strings.Contains(endpoint.Name, "StableSurge") ||
-			strings.Contains(endpoint.Name, "Quant") ||
-			strings.Contains(endpoint.Name, "reCLAMM")
 	default:
 		return false
 	}
@@ -228,14 +224,6 @@ func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
 		}
 	case "odos":
 		message = "Odos QuantAMM integration WIP"
-	case "barter":
-		if strings.Contains(endpoint.Name, "StableSurge") {
-			message = "Barter StableSurge integration WIP"
-		} else if strings.Contains(endpoint.Name, "Quant") {
-			message = "Barter QuantAMM integration WIP"
-		} else if strings.Contains(endpoint.Name, "reCLAMM") {
-			message = "Barter reCLAMM integration WIP"
-		}
 	}
 
 	endpoint.LastStatus = "info"
