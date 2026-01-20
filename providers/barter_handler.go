@@ -66,7 +66,13 @@ func (h *BarterHandler) HandleResponse(response *api.APIResponse, endpoint *coll
 		return fmt.Errorf("error parsing JSON: %v", err)
 	}
 
-	// Check if status is not "Normal"
+	// Handle "NoRouteFound" status specifically - this is a valid response indicating no route exists
+	if result.Status == "NoRouteFound" {
+		h.handleError(endpoint, "down", fmt.Sprintf("Barter API returned NoRouteFound - no route available for %s", endpoint.Name), string(response.Body))
+		return fmt.Errorf("no route found for endpoint %s", endpoint.Name)
+	}
+
+	// Check if status is not "Normal" (for other error statuses)
 	if result.Status != "Normal" {
 		h.handleError(endpoint, "down", fmt.Sprintf("API status is %s, expected Normal", result.Status), string(response.Body))
 		return fmt.Errorf("API status is %s, expected Normal", result.Status)
@@ -84,24 +90,25 @@ func (h *BarterHandler) HandleResponse(response *api.APIResponse, endpoint *coll
 		return fmt.Errorf("no swaps found in route")
 	}
 
-	// Check all swaps are from BalancerV3 (when filtering for Balancer sources only)
+	// Check all swaps are from BalancerV3 or reCLAMM (when filtering for Balancer sources only)
 	// For Barter, we check the metadata.type field
-	allBalancerV3 := true
+	allBalancerSource := true
 	for _, route := range result.Route {
 		for _, swap := range route.Swaps {
-			if swap.SwapInfo.Metadata.Type != "BalancerV3" {
-				allBalancerV3 = false
-				endpoint.Message = fmt.Sprintf("Found swap type %s, expected BalancerV3", swap.SwapInfo.Metadata.Type)
+			swapType := swap.SwapInfo.Metadata.Type
+			if swapType != "BalancerV3" && swapType != "reCLAMM" {
+				allBalancerSource = false
+				endpoint.Message = fmt.Sprintf("Found swap type %s, expected BalancerV3 or reCLAMM", swapType)
 				prettyJSON, _ := json.MarshalIndent(result, "", "    ")
-				h.handleError(endpoint, "down", fmt.Sprintf("Found swap type %s, expected BalancerV3", swap.SwapInfo.Metadata.Type), string(prettyJSON))
-				return fmt.Errorf("found swap type %s, expected BalancerV3", swap.SwapInfo.Metadata.Type)
+				h.handleError(endpoint, "down", fmt.Sprintf("Found swap type %s, expected BalancerV3 or reCLAMM", swapType), string(prettyJSON))
+				return fmt.Errorf("found swap type %s, expected BalancerV3 or reCLAMM", swapType)
 			}
 		}
 	}
 
-	if !allBalancerV3 {
+	if !allBalancerSource {
 		endpoint.LastStatus = "down"
-		return fmt.Errorf("not all swaps are from BalancerV3")
+		return fmt.Errorf("not all swaps are from BalancerV3 or reCLAMM")
 	}
 
 	// Check number of hops
@@ -202,6 +209,8 @@ func (rb *BarterRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoin
 	}
 
 	// Add typeFilters only if we're filtering for Balancer sources only
+	// Note: Barter API doesn't support "reCLAMM" as a typeFilter, so we only use "BalancerV3".
+	// The response validation will still accept both "BalancerV3" and "reCLAMM" types.
 	if options.IsBalancerSourceOnly {
 		requestBody["typeFilters"] = []string{"BalancerV3"}
 	}
