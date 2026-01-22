@@ -90,35 +90,48 @@ func (h *BarterHandler) HandleResponse(response *api.APIResponse, endpoint *coll
 		return fmt.Errorf("no swaps found in route")
 	}
 
-	// Check all swaps are from BalancerV3 or reCLAMM (when filtering for Balancer sources only)
+	// Check that we have more than 0 swaps
+	swapCount := len(result.Route[0].Swaps)
+	if swapCount <= 0 {
+		endpoint.LastStatus = "down"
+		endpoint.Message = fmt.Sprintf("Expected more than 0 swaps, got %d", swapCount)
+		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
+		h.handleError(endpoint, "down", fmt.Sprintf("Expected more than 0 swaps, got %d", swapCount), string(prettyJSON))
+		return fmt.Errorf("expected more than 0 swaps, got %d", swapCount)
+	}
+
+	// Check all swaps are from BalancerV3 (when filtering for Balancer sources only)
 	// For Barter, we check the metadata.type field
-	allBalancerSource := true
 	for _, route := range result.Route {
 		for _, swap := range route.Swaps {
 			swapType := swap.SwapInfo.Metadata.Type
-			if swapType != "BalancerV3" && swapType != "reCLAMM" {
-				allBalancerSource = false
-				endpoint.Message = fmt.Sprintf("Found swap type %s, expected BalancerV3 or reCLAMM", swapType)
+			if swapType != "BalancerV3" {
+				endpoint.Message = fmt.Sprintf("Found swap type %s, expected BalancerV3", swapType)
 				prettyJSON, _ := json.MarshalIndent(result, "", "    ")
-				h.handleError(endpoint, "down", fmt.Sprintf("Found swap type %s, expected BalancerV3 or reCLAMM", swapType), string(prettyJSON))
-				return fmt.Errorf("found swap type %s, expected BalancerV3 or reCLAMM", swapType)
+				h.handleError(endpoint, "down", fmt.Sprintf("Found swap type %s, expected BalancerV3", swapType), string(prettyJSON))
+				return fmt.Errorf("found swap type %s, expected BalancerV3", swapType)
 			}
 		}
 	}
 
-	if !allBalancerSource {
-		endpoint.LastStatus = "down"
-		return fmt.Errorf("not all swaps are from BalancerV3 or reCLAMM")
+	// Check that at least one swap has the expected pool address
+	foundExpectedPool := false
+	for _, route := range result.Route {
+		for _, swap := range route.Swaps {
+			if swap.SwapInfo.Metadata.PoolAddress == endpoint.ExpectedPool {
+				foundExpectedPool = true
+				break
+			}
+		}
+		if foundExpectedPool {
+			break
+		}
 	}
 
-	// Check number of hops
-	expectedSwaps := endpoint.ExpectedNoHops
-	if len(result.Route[0].Swaps) != expectedSwaps {
-		endpoint.LastStatus = "down"
-		endpoint.Message = fmt.Sprintf("Expected %d swaps (hops), got %d", expectedSwaps, len(result.Route[0].Swaps))
+	if !foundExpectedPool {
 		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
-		h.handleError(endpoint, "down", fmt.Sprintf("Expected %d swaps (hops), got %d", expectedSwaps, len(result.Route[0].Swaps)), string(prettyJSON))
-		return fmt.Errorf("expected %d swaps, got %d", expectedSwaps, len(result.Route[0].Swaps))
+		h.handleError(endpoint, "down", fmt.Sprintf("Expected pool %s not found in route", endpoint.ExpectedPool), string(prettyJSON))
+		return fmt.Errorf("expected pool %s not found in route", endpoint.ExpectedPool)
 	}
 
 	// Store the return amount if available
@@ -210,7 +223,7 @@ func (rb *BarterRequestBodyBuilder) BuildRequestBody(endpoint *collector.Endpoin
 
 	// Add typeFilters only if we're filtering for Balancer sources only
 	// Note: Barter API doesn't support "reCLAMM" as a typeFilter, so we only use "BalancerV3".
-	// The response validation will still accept both "BalancerV3" and "reCLAMM" types.
+	// The response validation requires all swaps to be "BalancerV3" type.
 	if options.IsBalancerSourceOnly {
 		requestBody["typeFilters"] = []string{"BalancerV3"}
 	}
