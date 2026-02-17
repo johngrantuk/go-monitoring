@@ -200,6 +200,8 @@ func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
 			endpoint.Network == "43114"
 	case "odos":
 		return strings.Contains(endpoint.Name, "Quant")
+	case "openocean":
+		return strings.Contains(endpoint.Name, "Quant")
 	default:
 		return false
 	}
@@ -221,6 +223,8 @@ func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
 		}
 	case "odos":
 		message = "Odos QuantAMM integration WIP"
+	case "openocean":
+		message = "OpenOcean QuantAMM not supported"
 	}
 
 	endpoint.LastStatus = "info"
@@ -303,5 +307,10 @@ func InitializeRegistry() {
 			"Content-Type": "application/json",
 			"X-Request-Id": "123", // Default request ID, can be made dynamic if needed
 		},
+	})
+
+	GlobalRegistry.RegisterProvider("openocean", ProviderConfig{
+		Handler:    providers.NewOpenOceanHandler(),
+		URLBuilder: providers.NewOpenOceanURLBuilder(),
 	})
 }

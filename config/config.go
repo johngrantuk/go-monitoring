@@ -290,6 +290,11 @@ var RouteSolvers = []RouteSolver{
 		Type:              "barter",
 		SupportedNetworks: []string{"1", "8453"}, // Mainnet, Base
 	},
+	{
+		Name:              "OpenOcean",
+		Type:              "openocean",
+		SupportedNetworks: []string{"1", "8453", "42161", "43114", "100"}, // Mainnet, Base, Arbitrum, Avalanche, Gnosis
+	},
 }
 
 // GetEnabledRouteSolvers returns only the enabled route solvers based on environment variables
