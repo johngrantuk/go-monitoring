@@ -246,6 +246,50 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "50000000000000000000000", // 50k WXPL
 		ExpectedNoHops:   1,
 	},
+	{
+		Name:             "Mainnet-reCLAMM-(WETH/COW)",
+		Network:          "1",
+		TokenIn:          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
+		TokenOut:         "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab", // COW
+		TokenInDecimals:  18,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0x0b118338b9edd9da0638c7411a65bd11e8fb4083",
+		SwapAmount:       "20000000000000000000", // 20 WETH
+		ExpectedNoHops:   1,
+	},
+	{
+		Name:             "Arbitrum-reCLAMM-(WETH/COW)",
+		Network:          "42161",
+		TokenIn:          "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH
+		TokenOut:         "0xcb8b5cd20bdcaea9a010ac1f8d835824f5c87a04", // COW
+		TokenInDecimals:  18,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0x1d201e1e5cb9a6cb117374f20fb4c21404c68f2e",
+		SwapAmount:       "20000000000000000000", // 20 WETH
+		ExpectedNoHops:   1,
+	},
+	{
+		Name:             "Base-reCLAMM-(WETH/COW)",
+		Network:          "8453",
+		TokenIn:          "0x4200000000000000000000000000000000000006", // WETH
+		TokenOut:         "0xc694a91e6b071bf030a18bd3053a7fe09b6dae69", // COW
+		TokenInDecimals:  18,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0xc6d840823843676b004626a07ce664f7d8b368ea",
+		SwapAmount:       "15000000000000000000", // 15 WETH
+		ExpectedNoHops:   1,
+	},
+	{
+		Name:             "Gnosis-reCLAMM-(WETH/COW)",
+		Network:          "100",
+		TokenIn:          "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1", // WETH
+		TokenOut:         "0x177127622c4a00f3d409b75571e12cb3c8973d3c", // COW
+		TokenInDecimals:  18,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0x697278dd4e8319a1358bd59f8f0bb49c0db6d0ca",
+		SwapAmount:       "15000000000000000000", // 15 WETH
+		ExpectedNoHops:   1,
+	},
 }
 
 // RouteSolvers contains all available route solver configurations
