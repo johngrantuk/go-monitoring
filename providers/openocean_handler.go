@@ -283,6 +283,8 @@ func (b *OpenOceanURLBuilder) getChainName(chainID string) string {
 		return "linea"
 	case "534352":
 		return "scroll"
+	case "143": // Monad
+		return "monad"
 	default:
 		return chainID
 	}
@@ -315,6 +317,8 @@ func (b *OpenOceanURLBuilder) getDefaultGasPrice(chainName string) string {
 		return "50000000" // 0.05 gwei
 	case "scroll":
 		return "100000000" // 0.1 gwei
+	case "monad":
+		return "1000000000" // 1 gwei
 	default:
 		return "30000000000" // 30 gwei as a safe default
 	}

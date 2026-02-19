@@ -129,8 +129,8 @@ func (h *KyberSwapHandler) HandleResponse(response *api.APIResponse, endpoint *c
 			// Track all exchanges for debugging
 			foundExchanges = append(foundExchanges, routeItem.Exchange)
 
-			// Check for expected pool
-			if routeItem.Pool == endpoint.ExpectedPool {
+			// Check for expected pool (case-insensitive, addresses may differ in casing)
+			if strings.EqualFold(routeItem.Pool, endpoint.ExpectedPool) {
 				foundExpectedPool = true
 			}
 
@@ -229,6 +229,8 @@ func (h *KyberSwapHandler) GetChainName(chainID string) string {
 		return "hyperevm"
 	case "9745":
 		return "plasma"
+	case "143": // Monad
+		return "monad"
 	default:
 		return "ethereum" // default fallback
 	}

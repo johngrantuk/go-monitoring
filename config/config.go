@@ -290,6 +290,17 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "15000000000000000000", // 15 WETH
 		ExpectedNoHops:   1,
 	},
+	{
+		Name:             "Monad-reCLAMM-(USDC/DUST)",
+		Network:          "143",
+		TokenIn:          "0x754704bc059f8c67012fed69bc8a327a5aafb603", // USDC
+		TokenOut:         "0xad96c3dffcd6374294e2573a7fbba96097cc8d7c", // DUST
+		TokenInDecimals:  6,
+		TokenOutDecimals: 18,
+		ExpectedPool:     "0x36DA07624FC02b34042770EbE505e844C7B529FF",
+		SwapAmount:       "10000000000", // 10k USDC
+		ExpectedNoHops:   1,
+	},
 }
 
 // RouteSolvers contains all available route solver configurations
@@ -307,7 +318,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "0x",
 		Type:              "0x",
-		SupportedNetworks: []string{"1", "8453", "42161", "43114", "9745"}, // Mainnet, Base, Arbitrum, Avalanche, Plasma
+		SupportedNetworks: []string{"1", "8453", "42161", "43114", "9745", "143"}, // Mainnet, Base, Arbitrum, Avalanche, Plasma, Monad
 	},
 	{
 		Name:              "Odos",
@@ -317,7 +328,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "KyberSwap",
 		Type:              "kyberswap",
-		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999", "9745"}, // All supported networks
+		SupportedNetworks: []string{"1", "56", "42161", "137", "10", "43114", "8453", "324", "250", "59144", "534352", "5000", "81457", "146", "80094", "2020", "999", "9745", "143"}, // All supported networks
 	},
 	{
 		Name:              "HyperBloom",
@@ -337,7 +348,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "OpenOcean",
 		Type:              "openocean",
-		SupportedNetworks: []string{"1", "8453", "42161", "43114", "100"}, // Mainnet, Base, Arbitrum, Avalanche, Gnosis
+		SupportedNetworks: []string{"1", "8453", "42161", "43114", "100", "143"}, // Mainnet, Base, Arbitrum, Avalanche, Gnosis, Monad
 	},
 }
 

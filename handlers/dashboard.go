@@ -62,6 +62,10 @@ func getNetworkName(network string) string {
 		return "avalanche"
 	case "999":
 		return "hyperevm"
+	case "9745":
+		return "plasma"
+	case "143":
+		return "monad"
 	default:
 		return network
 	}
