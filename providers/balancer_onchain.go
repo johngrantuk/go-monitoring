@@ -2,8 +2,10 @@ package providers
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"math/big"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"go-monitoring/config"
 	"go-monitoring/internal/collector"
@@ -143,10 +146,26 @@ func getClient(rpcURL string) (*ethclient.Client, error) {
 		return client, nil
 	}
 
-	client, err := ethclient.Dial(rpcURL)
+	// Create HTTP client with proper TLS configuration for fly.io
+	// This ensures CA certificates are properly loaded
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				// Use system certificate pool - this works on fly.io
+				// The default behavior loads certificates from the system
+			},
+		},
+		Timeout: 30 * time.Second,
+	}
+
+	// Create RPC client with custom HTTP client
+	rpcClient, err := rpc.DialHTTPWithClient(rpcURL, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RPC: %w", err)
 	}
+
+	// Wrap RPC client with ethclient
+	client = ethclient.NewClient(rpcClient)
 
 	clients[rpcURL] = client
 	return client, nil
