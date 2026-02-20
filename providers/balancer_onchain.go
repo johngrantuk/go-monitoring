@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -145,14 +146,19 @@ func getClient(rpcURL string) (*ethclient.Client, error) {
 	if client, exists := clients[rpcURL]; exists {
 		return client, nil
 	}
-
 	// Create HTTP client with proper TLS configuration for fly.io
-	// This ensures CA certificates are properly loaded
+	// Explicitly load system certificate pool to ensure CA certificates are available
+	systemCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		// If system cert pool fails, create a new empty pool
+		// This can happen in some container environments
+		systemCertPool = x509.NewCertPool()
+	}
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				// Use system certificate pool - this works on fly.io
-				// The default behavior loads certificates from the system
+				RootCAs: systemCertPool,
 			},
 		},
 		Timeout: 30 * time.Second,
