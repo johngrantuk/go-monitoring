@@ -120,6 +120,8 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			.status-unknown { background-color: #FFA500; }
 			.status-disabled { background-color: #D3D3D3; }
 			.highest-value { background-color: #90EE90; font-weight: bold; }
+			.price-warning { background-color: #FFB347; font-weight: bold; }
+			.price-error { background-color: #FF6B6B; color: white; font-weight: bold; }
 			table { border-collapse: collapse; width: 100%; }
 			th, td { padding: 8px; text-align: left; }
 			.name-column { white-space: nowrap; }
@@ -332,15 +334,33 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				returnAmountDisplay = endpoint.ReturnAmount
 			}
 
-			// Format market price display
+			// Format market/on-chain price display
 			marketPriceDisplay := "N/A"
-			if endpoint.MarketPrice != "" {
+			priceLabel := ""
+			returnAmountClass := ""
+			marketPriceClass := ""
+			
+			if endpoint.RouteSolver == "balancer_sor" {
+				if endpoint.OnChainPrice != "" {
+					// For balancer_sor, show on-chain price if available
+					marketPriceDisplay = endpoint.OnChainPrice
+					priceLabel = " (on-chain)"
+				} else if endpoint.OnChainQueryError != "" {
+					// Show error state
+					marketPriceDisplay = "Query Failed"
+					priceLabel = " (error)"
+					marketPriceClass = " class='price-error'"
+				} else {
+					// No query attempted yet
+					marketPriceDisplay = "N/A"
+					priceLabel = " (on-chain)"
+				}
+			} else if endpoint.MarketPrice != "" {
+				// For other providers, show market price
 				marketPriceDisplay = endpoint.MarketPrice
 			}
 
-			// Compare return amount vs market price within this row and highlight the larger value
-			returnAmountClass := ""
-			marketPriceClass := ""
+			// Compare return amount vs market/on-chain price within this row (only if both are valid)
 
 			// Parse return amount
 			returnAmountStr := endpoint.ReturnAmount
@@ -352,27 +372,71 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				returnAmountBig.SetString("0", 10)
 			}
 
-			// Parse market price
-			marketPriceStr := endpoint.MarketPrice
-			if marketPriceStr == "" || marketPriceStr == "N/A" {
-				marketPriceStr = "0"
-			}
-			marketPriceBig := new(big.Int)
-			if _, ok := marketPriceBig.SetString(marketPriceStr, 10); !ok {
-				marketPriceBig.SetString("0", 10)
-			}
-
-			// Compare and highlight the larger value (only if both are valid non-zero values)
-			if returnAmountBig.Cmp(big.NewInt(0)) > 0 || marketPriceBig.Cmp(big.NewInt(0)) > 0 {
-				if returnAmountBig.Cmp(marketPriceBig) > 0 {
-					returnAmountClass = " class='highest-value'"
-				} else if marketPriceBig.Cmp(returnAmountBig) > 0 {
-					marketPriceClass = " class='highest-value'"
+			// Parse market/on-chain price
+			var priceBig *big.Int
+			if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" && endpoint.OnChainQueryError == "" {
+				priceStr := endpoint.OnChainPrice
+				if priceStr == "" || priceStr == "N/A" {
+					priceStr = "0"
 				}
-				// If they're equal, don't highlight either
+				priceBig = new(big.Int)
+				if _, ok := priceBig.SetString(priceStr, 10); !ok {
+					priceBig.SetString("0", 10)
+				}
+			} else {
+				marketPriceStr := endpoint.MarketPrice
+				if marketPriceStr == "" || marketPriceStr == "N/A" {
+					marketPriceStr = "0"
+				}
+				priceBig = new(big.Int)
+				if _, ok := priceBig.SetString(marketPriceStr, 10); !ok {
+					priceBig.SetString("0", 10)
+				}
 			}
 
-			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td%s>%s</td><td%s>%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
+			// For balancer_sor, check for deviation > 0.5%
+			if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" {
+				if returnAmountBig.Cmp(big.NewInt(0)) > 0 && priceBig.Cmp(big.NewInt(0)) > 0 {
+					// Calculate percentage deviation: abs(ReturnAmount - OnChainPrice) / OnChainPrice * 100
+					diff := new(big.Int).Sub(returnAmountBig, priceBig)
+					diff.Abs(diff)
+					
+					// Convert to big.Float for division
+					diffFloat := new(big.Float).SetInt(diff)
+					priceFloat := new(big.Float).SetInt(priceBig)
+					
+					// Calculate percentage: (diff / price) * 100
+					if priceFloat.Cmp(big.NewFloat(0)) > 0 {
+						percent := new(big.Float).Quo(diffFloat, priceFloat)
+						percent.Mul(percent, big.NewFloat(100))
+						
+						percentVal, _ := percent.Float64()
+						if percentVal > 0.5 {
+							// Deviation > 0.5%, highlight both cells with warning
+							returnAmountClass = " class='price-warning'"
+							marketPriceClass = " class='price-warning'"
+						} else {
+							// Within threshold, highlight larger value
+							if returnAmountBig.Cmp(priceBig) > 0 {
+								returnAmountClass = " class='highest-value'"
+							} else if priceBig.Cmp(returnAmountBig) > 0 {
+								marketPriceClass = " class='highest-value'"
+							}
+						}
+					}
+				}
+			} else {
+				// For other providers, compare and highlight the larger value
+				if returnAmountBig.Cmp(big.NewInt(0)) > 0 || priceBig.Cmp(big.NewInt(0)) > 0 {
+					if returnAmountBig.Cmp(priceBig) > 0 {
+						returnAmountClass = " class='highest-value'"
+					} else if priceBig.Cmp(returnAmountBig) > 0 {
+						marketPriceClass = " class='highest-value'"
+					}
+				}
+			}
+
+			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td%s>%s</td><td%s>%s%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
 				endpoint.SolverName,
 				statusClass,
 				endpoint.LastStatus,
@@ -381,6 +445,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				returnAmountDisplay,
 				marketPriceClass,
 				marketPriceDisplay,
+				priceLabel,
 				formatTimeAgo(endpoint.LastChecked),
 				endpoint.Name)
 		}

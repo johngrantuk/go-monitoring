@@ -55,6 +55,21 @@ func (r *ProviderRegistry) CheckProvider(endpoint *collector.Endpoint, options *
 			balancerOptions := &CheckOptions{IsBalancerSourceOnly: &[]bool{true}[0]}
 			r.checkWithGenericClient(endpoint, providerConfig, balancerOptions)
 
+			// For balancer_sor, perform on-chain query after getting path information
+			if endpoint.RouteSolver == "balancer_sor" && len(endpoint.SwapPathPools) > 0 {
+				fmt.Printf("%s[ON-CHAIN QUERY]%s %s: Querying on-chain price\n", config.ColorCyan, config.ColorReset, endpoint.Name)
+				onChainPrice, err := providers.QueryOnChainPrice(endpoint)
+				if err != nil {
+					endpoint.OnChainPrice = ""
+					endpoint.OnChainQueryError = err.Error()
+					fmt.Printf("%s[WARN]%s %s: On-chain query failed: %v\n", config.ColorYellow, config.ColorReset, endpoint.Name, err)
+				} else {
+					endpoint.OnChainPrice = onChainPrice
+					endpoint.OnChainQueryError = ""
+					fmt.Printf("%s[ON-CHAIN RESULT]%s %s: On-chain price = %s\n", config.ColorGreen, config.ColorReset, endpoint.Name, onChainPrice)
+				}
+			}
+
 			// Add delay between calls to avoid rate limiting
 			fmt.Printf("%s[DELAY]%s %s: Waiting 2 seconds before market price check\n", config.ColorYellow, config.ColorReset, endpoint.Name)
 			time.Sleep(2 * time.Second)
@@ -66,6 +81,21 @@ func (r *ProviderRegistry) CheckProvider(endpoint *collector.Endpoint, options *
 		} else {
 			// Use provided options (for manual checks)
 			r.checkWithGenericClient(endpoint, providerConfig, options)
+
+			// For balancer_sor, perform on-chain query after getting path information
+			if endpoint.RouteSolver == "balancer_sor" && len(endpoint.SwapPathPools) > 0 {
+				fmt.Printf("%s[ON-CHAIN QUERY]%s %s: Querying on-chain price\n", config.ColorCyan, config.ColorReset, endpoint.Name)
+				onChainPrice, err := providers.QueryOnChainPrice(endpoint)
+				if err != nil {
+					endpoint.OnChainPrice = ""
+					endpoint.OnChainQueryError = err.Error()
+					fmt.Printf("%s[WARN]%s %s: On-chain query failed: %v\n", config.ColorYellow, config.ColorReset, endpoint.Name, err)
+				} else {
+					endpoint.OnChainPrice = onChainPrice
+					endpoint.OnChainQueryError = ""
+					fmt.Printf("%s[ON-CHAIN RESULT]%s %s: On-chain price = %s\n", config.ColorGreen, config.ColorReset, endpoint.Name, onChainPrice)
+				}
+			}
 		}
 		return
 	}

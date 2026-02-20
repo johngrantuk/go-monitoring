@@ -20,6 +20,9 @@ type BalancerSORResponse struct {
 			ReturnAmount string `json:"returnAmount"`
 			Paths        []struct {
 				Pools    []string `json:"pools"`
+				Tokens   []struct {
+					Address string `json:"address"`
+				} `json:"tokens"`
 				IsBuffer []bool   `json:"isBuffer"`
 			} `json:"paths"`
 		} `json:"sorGetSwapPaths"`
@@ -92,6 +95,25 @@ func (h *BalancerSORHandler) HandleResponse(response *api.APIResponse, endpoint 
 
 	path := result.Data.SorGetSwapPaths.Paths[0]
 	pools := path.Pools
+
+	// Store path information for on-chain query
+	endpoint.SwapPathPools = pools
+	endpoint.SwapPathIsBuffer = path.IsBuffer
+
+	// Extract tokenOut for each step from tokens array
+	// tokens array contains: [tokenIn, intermediate1, intermediate2, ..., tokenOut]
+	// For step i, tokenOut is tokens[i+1].address
+	if len(path.Tokens) > 0 {
+		endpoint.SwapPathTokenOut = make([]string, len(pools))
+		for i := 0; i < len(pools); i++ {
+			if i+1 < len(path.Tokens) {
+				endpoint.SwapPathTokenOut[i] = path.Tokens[i+1].Address
+			} else {
+				// Fallback: if tokens array is shorter than expected, use the last token
+				endpoint.SwapPathTokenOut[i] = path.Tokens[len(path.Tokens)-1].Address
+			}
+		}
+	}
 
 	// Check that at least one of the pools matches the expected pool
 	expectedPoolFound := false
@@ -217,6 +239,9 @@ func (b *BalancerSORRequestBodyBuilder) BuildRequestBody(endpoint *collector.End
 				returnAmount
 				paths {
 					pools
+					tokens {
+						address
+					}
 					isBuffer
 				}
 			}
@@ -237,6 +262,9 @@ func (b *BalancerSORRequestBodyBuilder) BuildRequestBody(endpoint *collector.End
 				returnAmount
 				paths {
 					pools
+					tokens {
+						address
+					}
 					isBuffer
 				}
 			}

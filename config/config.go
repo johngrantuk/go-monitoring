@@ -382,3 +382,29 @@ func GetRouteSolverDelay(routeSolver string) time.Duration {
 	// If parsing fails, return default
 	return 2 * time.Second
 }
+
+// GetRPCURL returns the RPC URL for a given network chain ID.
+func GetRPCURL(network string) string {
+	var envVarName string
+	switch network {
+	case "1":
+		envVarName = "ETHEREUM_RPC_URL"
+	case "42161":
+		envVarName = "ARBITRUM_RPC_URL"
+	case "10":
+		envVarName = "OPTIMISM_RPC_URL"
+	case "8453":
+		envVarName = "BASE_RPC_URL"
+	case "43114":
+		envVarName = "AVALANCHE_RPC_URL"
+	case "100":
+		envVarName = "GNOSIS_RPC_URL"
+	case "999":
+		envVarName = "HYPEREVM_RPC_URL"
+	case "9745":
+		envVarName = "PLASMA_RPC_URL"
+	default:
+		return ""
+	}
+	return os.Getenv(envVarName)
+}

@@ -23,8 +23,13 @@ type Endpoint struct {
 	LastStatus       string
 	LastChecked      time.Time
 	Message          string
-	ReturnAmount     string
-	MarketPrice      string
+	ReturnAmount      string
+	MarketPrice       string
+	OnChainPrice      string
+	OnChainQueryError string // Error message if on-chain query failed
+	SwapPathPools     []string
+	SwapPathTokenOut  []string
+	SwapPathIsBuffer  []bool
 }
 
 var (
