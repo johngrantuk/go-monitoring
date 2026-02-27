@@ -321,6 +321,8 @@ func (b *BalancerSORRequestBodyBuilder) convertNetworkToChain(network string) (s
 		return "HYPEREVM", nil
 	case "9745": // Plasma
 		return "PLASMA", nil
+	case "143": // Monad
+		return "MONAD", nil
 	default:
 		return "", fmt.Errorf("unsupported network: %s", network)
 	}

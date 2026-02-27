@@ -45,6 +45,7 @@ var batchRouterAddresses = map[string]string{
 	"100":   "0xe2fa4e1d17725e72dcdAfe943Ecf45dF4B9E285b", // Gnosis
 	"999":   "0x9dd5Db2d38b50bEF682cE532bCca5DfD203915E1", // HyperEVM
 	"9745":  "0x85a80afee867aDf27B50BdB7b76DA70f1E853062", // Plasma
+	"143":   "0x85a80afee867aDf27B50BdB7b76DA70f1E853062", // Monad
 }
 
 // Router ABI JSON for querySwapSingleTokenExactIn

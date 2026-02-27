@@ -191,28 +191,6 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "100000000000000000",
 		ExpectedNoHops:   1,
 	},
-	// {
-	// 	Name:             "Base-reCLAMM-(WETH/cbBTC)",
-	// 	Network:          "8453",
-	// 	TokenIn:          "0x4200000000000000000000000000000000000006", // WETH
-	// 	TokenOut:         "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf", // cbBTC
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 8,
-	// 	ExpectedPool:     "0x19aeb8168d921bb069c6771bbaff7c09116720d0",
-	// 	SwapAmount:       "1000000000000000000", // 1 WETH
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Mainnet-reCLAMM-(WETH/AAVE)",
-	// 	Network:          "1",
-	// 	TokenIn:          "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
-	// 	TokenOut:         "0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9", // AAVE
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0x9d1fcf346ea1b073de4d5834e25572cc6ad71f4d",
-	// 	SwapAmount:       "3000000000000000000", // 3 WETH
-	// 	ExpectedNoHops:   1,
-	// },
 	{
 		Name:             "Hyper-Boosted-StableSurge-(USDT/USDXL)",
 		Network:          "999",
@@ -235,72 +213,17 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "100000000000000000000", // 100 WETH
 		ExpectedNoHops:   1,
 	},
-	// {
-	// 	Name:             "Plasma-reCLAMM-(WXPL/USDT0)",
-	// 	Network:          "9745",
-	// 	TokenIn:          "0x6100e367285b01f48d07953803a2d8dca5d19873", // WXPL
-	// 	TokenOut:         "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb", // USDT0
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 6,
-	// 	ExpectedPool:     "0xe14ba497a7c51f34896d327ec075f3f18210a270",
-	// 	SwapAmount:       "50000000000000000000000", // 50k WXPL
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Mainnet-reCLAMM-(WETH/COW)",
-	// 	Network:          "1",
-	// 	TokenIn:          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
-	// 	TokenOut:         "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab", // COW
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0x0b118338b9edd9da0638c7411a65bd11e8fb4083",
-	// 	SwapAmount:       "20000000000000000000", // 20 WETH
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Arbitrum-reCLAMM-(WETH/COW)",
-	// 	Network:          "42161",
-	// 	TokenIn:          "0x82af49447d8a07e3bd95bd0d56f35241523fbab1", // WETH
-	// 	TokenOut:         "0xcb8b5cd20bdcaea9a010ac1f8d835824f5c87a04", // COW
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0x1d201e1e5cb9a6cb117374f20fb4c21404c68f2e",
-	// 	SwapAmount:       "20000000000000000000", // 20 WETH
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Base-reCLAMM-(WETH/COW)",
-	// 	Network:          "8453",
-	// 	TokenIn:          "0x4200000000000000000000000000000000000006", // WETH
-	// 	TokenOut:         "0xc694a91e6b071bf030a18bd3053a7fe09b6dae69", // COW
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0xc6d840823843676b004626a07ce664f7d8b368ea",
-	// 	SwapAmount:       "15000000000000000000", // 15 WETH
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Gnosis-reCLAMM-(WETH/COW)",
-	// 	Network:          "100",
-	// 	TokenIn:          "0x6a023ccd1ff6f2045c3309768ead9e68f978f6e1", // WETH
-	// 	TokenOut:         "0x177127622c4a00f3d409b75571e12cb3c8973d3c", // COW
-	// 	TokenInDecimals:  18,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0x697278dd4e8319a1358bd59f8f0bb49c0db6d0ca",
-	// 	SwapAmount:       "15000000000000000000", // 15 WETH
-	// 	ExpectedNoHops:   1,
-	// },
-	// {
-	// 	Name:             "Monad-reCLAMM-(USDC/DUST)",
-	// 	Network:          "143",
-	// 	TokenIn:          "0x754704bc059f8c67012fed69bc8a327a5aafb603", // USDC
-	// 	TokenOut:         "0xad96c3dffcd6374294e2573a7fbba96097cc8d7c", // DUST
-	// 	TokenInDecimals:  6,
-	// 	TokenOutDecimals: 18,
-	// 	ExpectedPool:     "0x36DA07624FC02b34042770EbE505e844C7B529FF",
-	// 	SwapAmount:       "10000000000", // 10k USDC
-	// 	ExpectedNoHops:   1,
-	// },
+	{
+		Name:             "Monad-Boosted-StableSurge-(USDT/AUSD/USDC)",
+		Network:          "143",
+		TokenIn:          "0x00000000efe302beaa2b3e6e1b18d08d69a9012a", // AUSD
+		TokenOut:         "0x754704bc059f8c67012fed69bc8a327a5aafb603", // USDC
+		TokenInDecimals:  6,
+		TokenOutDecimals: 6,
+		ExpectedPool:     "0x2daa146dfb7eaef0038f9f15b2ec1e4de003f72b",
+		SwapAmount:       "10000000000", // 10k USDC
+		ExpectedNoHops:   1,
+	},
 }
 
 // RouteSolvers contains all available route solver configurations
@@ -338,7 +261,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "Balancer SOR",
 		Type:              "balancer_sor",
-		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999", "9745"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM, Plasma
+		SupportedNetworks: []string{"1", "42161", "10", "8453", "43114", "100", "999", "9745", "143"}, // Mainnet, Arbitrum, Optimism, Base, Avalanche, Gnosis, HyperEVM, Plasma, Monad
 	},
 	{
 		Name:              "Barter",
@@ -403,6 +326,8 @@ func GetRPCURL(network string) string {
 		envVarName = "HYPEREVM_RPC_URL"
 	case "9745":
 		envVarName = "PLASMA_RPC_URL"
+	case "143":
+		envVarName = "MONAD_RPC_URL"
 	default:
 		return ""
 	}
