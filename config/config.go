@@ -224,6 +224,17 @@ var BaseEndpoints = []BaseEndpoint{
 		SwapAmount:       "10000000000", // 10k USDC
 		ExpectedNoHops:   1,
 	},
+	{
+		Name:             "Mainnet-Boosted-StableSurge-(pmUSD/USDC)",
+		Network:          "1",
+		TokenIn:          "0xc0c17dd08263c16f6b64e772fb9b723bf1344ddf", // pmUSD
+		TokenOut:         "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
+		TokenInDecimals:  18,
+		TokenOutDecimals: 6,
+		ExpectedPool:     "0xe00e947decfe01692070e113002705bdf77ddbd3",
+		SwapAmount:       "1000000000000000000000", // 1k pmUSDC
+		ExpectedNoHops:   1,
+	},
 }
 
 // RouteSolvers contains all available route solver configurations
