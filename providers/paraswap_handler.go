@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"go-monitoring/config"
 	"go-monitoring/internal/api"
@@ -71,14 +72,21 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 		endpoint.Message = fmt.Sprintf("Warning: %s (but route is valid)", result.Error)
 	}
 
-	// Check if the route uses the expected pool (Balancer V3)
+	// Check if the route uses Balancer V3 and includes the expected pool
 	foundBalancerV3 := false
+	foundExpectedPool := false
 	for _, route := range result.PriceRoute.BestRoute {
 		for _, swap := range route.Swaps {
 			for _, exchange := range swap.SwapExchanges {
 				if exchange.Exchange == "BalancerV3" {
 					foundBalancerV3 = true
-					break
+
+					for _, poolAddress := range exchange.PoolAddresses {
+						if strings.EqualFold(poolAddress, endpoint.ExpectedPool) {
+							foundExpectedPool = true
+							break
+						}
+					}
 				}
 			}
 		}
@@ -89,6 +97,13 @@ func (h *ParaswapHandler) HandleResponse(response *api.APIResponse, endpoint *co
 		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
 		h.handleError(endpoint, "down", "Route does not use Balancer V3", string(prettyJSON))
 		return fmt.Errorf("route does not use Balancer V3")
+	}
+
+	if !foundExpectedPool {
+		endpoint.Message = fmt.Sprintf("Expected pool %s not found in BalancerV3 route", endpoint.ExpectedPool)
+		prettyJSON, _ := json.MarshalIndent(result, "", "    ")
+		h.handleError(endpoint, "down", fmt.Sprintf("Expected pool %s not found in BalancerV3 route", endpoint.ExpectedPool), string(prettyJSON))
+		return fmt.Errorf("expected pool %s not found in balancerv3 route", endpoint.ExpectedPool)
 	}
 
 	// Store the return amount if available
