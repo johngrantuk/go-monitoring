@@ -30,11 +30,16 @@ func checkAllEndpoints() {
 	// Get a copy of endpoints to iterate over
 	endpoints := collector.GetEndpointsCopy()
 
-	// Do the actual API checks outside the lock
+	// Do the actual API checks outside the lock. Each row is wrapped in
+	// safeCheck so a panic in one provider handler doesn't kill the sweep
+	// for the remaining rows.
 	for _, endpoint := range endpoints {
-		collector.UpdateEndpointByName(endpoint.Name, func(endpoint *collector.Endpoint) {
-			// Make both calls: Balancer-only and market price
-			CheckAPI(endpoint, nil) // nil options will trigger both calls
+		name := endpoint.Name
+		safeCheck(name, func() {
+			collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
+				// Make both calls: Balancer-only and market price
+				CheckAPI(endpoint, nil) // nil options will trigger both calls
+			})
 		})
 		// Add delay between each endpoint check based on endpoint's configured delay
 		time.Sleep(endpoint.Delay)

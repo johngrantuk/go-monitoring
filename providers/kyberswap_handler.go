@@ -103,20 +103,10 @@ func (h *KyberSwapHandler) HandleResponse(response *api.APIResponse, endpoint *c
 		return fmt.Errorf("no route ID in response")
 	}
 
-	// Determine expected source type based on endpoint name
-	var expectedSource string
-	switch {
-	case strings.Contains(endpoint.Name, "Quant"):
-		expectedSource = "balancer-v3-quantamm"
-	case strings.Contains(endpoint.Name, "Stable"):
-		expectedSource = "balancer-v3-stable"
-	case strings.Contains(endpoint.Name, "Gyro"):
-		expectedSource = "balancer-v3-eclp"
-	case strings.Contains(endpoint.Name, "reCLAMM"):
-		expectedSource = "balancer-v3-reclamm"
-	default:
-		h.handleError(endpoint, "down", "unsupported pool type for validation", string(response.Body))
-		return fmt.Errorf("unsupported pool type for validation")
+	expectedSource, err := kyberIncludedBalancerV3Source(endpoint)
+	if err != nil {
+		h.handleError(endpoint, "down", err.Error(), string(response.Body))
+		return err
 	}
 
 	// Check if route contains the expected pool and only the expected source type
@@ -236,8 +226,33 @@ func (h *KyberSwapHandler) GetChainName(chainID string) string {
 	}
 }
 
-// GetIncludedSources determines included sources based on endpoint name
-func (h *KyberSwapHandler) GetIncludedSources(endpointName string) (string, error) {
+// kyberIncludedBalancerV3Source returns Kyber's `includedSources` slug for Balancer V3.
+// Discovered rows set PoolType / HookType from the Balancer API; base rows leave them
+// empty and rely on substrings in the expanded endpoint Name (Stable, Gyro, …).
+func kyberIncludedBalancerV3Source(e *collector.Endpoint) (string, error) {
+	pt := strings.TrimSpace(e.PoolType)
+	ht := strings.TrimSpace(e.HookType)
+	if pt != "" || ht != "" {
+		combined := strings.ToUpper(pt + " " + ht)
+		switch {
+		case strings.Contains(combined, "QUANT"):
+			return "balancer-v3-quantamm", nil
+		case strings.Contains(combined, "RECLAMM"):
+			return "balancer-v3-reclamm", nil
+		case strings.Contains(combined, "GYRO"):
+			return "balancer-v3-eclp", nil
+		case strings.Contains(combined, "STABLE"):
+			return "balancer-v3-stable", nil
+		case strings.Contains(combined, "WEIGHTED"):
+			return "balancer-v3-weighted", nil
+		default:
+			return "", fmt.Errorf("unsupported pool type from PoolType=%q HookType=%q", e.PoolType, e.HookType)
+		}
+	}
+	return kyberIncludedSourcesFromEndpointName(e.Name)
+}
+
+func kyberIncludedSourcesFromEndpointName(endpointName string) (string, error) {
 	switch {
 	case strings.Contains(endpointName, "Quant"):
 		return "balancer-v3-quantamm", nil
@@ -282,8 +297,7 @@ func (b *KyberSwapURLBuilder) BuildURL(endpoint *collector.Endpoint, options api
 
 	// Only add source filtering if we're filtering for Balancer sources only
 	if options.IsBalancerSourceOnly {
-		// Determine included sources based on endpoint name
-		includedSources, err := handler.GetIncludedSources(endpoint.Name)
+		includedSources, err := kyberIncludedBalancerV3Source(endpoint)
 		if err != nil {
 			return "", fmt.Errorf("error getting included sources: %v", err)
 		}

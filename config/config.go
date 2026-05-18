@@ -7,6 +7,109 @@ import (
 	"time"
 )
 
+// DiscoveryConfig holds per-network configuration for Balancer V3 pool discovery.
+type DiscoveryConfig struct {
+	Network         string
+	Enabled         bool
+	TVLThresholdUSD float64
+	TradePercent    float64 // percentage of TokenIn.balance used as trade size, e.g. 5 means 5%
+}
+
+// DiscoveryConfigs contains the discovery configuration per network.
+var DiscoveryConfigs = []DiscoveryConfig{
+	{Network: "1", Enabled: true, TVLThresholdUSD: 1_000_000, TradePercent: 5},
+	{Network: "8453", Enabled: true, TVLThresholdUSD: 1_000_000, TradePercent: 5},
+	{Network: "100", Enabled: true, TVLThresholdUSD: 1_000_000, TradePercent: 5},
+}
+
+// NetworkName maps a numeric network ID to a lowercase, human-readable name
+// (e.g. "ethereum", "arbitrum"). Returns the input unchanged for unknown IDs
+// so callers always get a non-empty string suitable for display / keys.
+func NetworkName(network string) string {
+	switch network {
+	case "1":
+		return "ethereum"
+	case "8453":
+		return "base"
+	case "42161":
+		return "arbitrum"
+	case "10":
+		return "optimism"
+	case "100":
+		return "gnosis"
+	case "43114":
+		return "avalanche"
+	case "999":
+		return "hyperevm"
+	case "9745":
+		return "plasma"
+	case "143":
+		return "monad"
+	default:
+		return network
+	}
+}
+
+// BalancerAPIChain maps a numeric network ID to the Balancer GraphQL `GqlChain`
+// enum value. Returns an empty string for networks not supported by the API.
+func BalancerAPIChain(network string) string {
+	switch network {
+	case "1":
+		return "MAINNET"
+	case "8453":
+		return "BASE"
+	case "42161":
+		return "ARBITRUM"
+	case "10":
+		return "OPTIMISM"
+	case "100":
+		return "GNOSIS"
+	case "43114":
+		return "AVALANCHE"
+	case "999":
+		return "HYPEREVM"
+	case "9745":
+		return "PLASMA"
+	case "143":
+		return "MONAD"
+	default:
+		return ""
+	}
+}
+
+// GetDiscoveryIntervalHours returns the discovery interval in hours from the
+// DISCOVERY_INTERVAL_HOURS environment variable. Defaults to 24 if unset or invalid.
+func GetDiscoveryIntervalHours() int {
+	envValue := os.Getenv("DISCOVERY_INTERVAL_HOURS")
+	if envValue == "" {
+		return 24
+	}
+
+	interval, err := strconv.Atoi(envValue)
+	if err != nil || interval <= 0 {
+		return 24
+	}
+
+	return interval
+}
+
+// GetDiscoveryTestPoolsPerGroup returns the maximum number of pools to select
+// per (PoolType, HookType) group when building the daily test set, from the
+// DISCOVERY_TEST_POOLS_PER_GROUP environment variable. Defaults to 1.
+func GetDiscoveryTestPoolsPerGroup() int {
+	envValue := os.Getenv("DISCOVERY_TEST_POOLS_PER_GROUP")
+	if envValue == "" {
+		return 1
+	}
+
+	n, err := strconv.Atoi(envValue)
+	if err != nil || n <= 0 {
+		return 1
+	}
+
+	return n
+}
+
 // BaseEndpoint represents the common configuration for an endpoint
 type BaseEndpoint struct {
 	Name             string
@@ -71,39 +174,6 @@ func getRouteSolverEnabled(solverType string) bool {
 // BaseEndpoints contains all base endpoint configurations
 var BaseEndpoints = []BaseEndpoint{
 	{
-		Name:             "Mainet-Boosted-Stable(GHO/USDC)",
-		Network:          "1",
-		TokenIn:          "0x40d16fc0246ad3160ccc09b8d0d3a2cd28ae6c2f", // GHO
-		TokenOut:         "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
-		TokenInDecimals:  18,
-		TokenOutDecimals: 6,
-		ExpectedPool:     "0x85b2b559bc2d21104c4defdd6efca8a20343361d",
-		SwapAmount:       "1000000000000000000000000",
-		ExpectedNoHops:   1,
-	},
-	{
-		Name:             "Mainet-Boosted-StableSurge(wstETH/tETH)",
-		Network:          "1",
-		TokenIn:          "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", // wstETH
-		TokenOut:         "0xd11c452fc99cf405034ee446803b6f6c1f6d5ed8", // tETH
-		TokenInDecimals:  18,
-		TokenOutDecimals: 18,
-		ExpectedPool:     "0x9ed5175aecb6653c1bdaa19793c16fd74fbeeb37",
-		SwapAmount:       "150000000000000000000",
-		ExpectedNoHops:   1,
-	},
-	{
-		Name:             "Base-Boosted-Stable(wstETH/ezETH)",
-		Network:          "8453",
-		TokenIn:          "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452", // wstETH
-		TokenOut:         "0x2416092f143378750bb29b79eD961ab195CcEea5", // ezETH
-		TokenInDecimals:  18,
-		TokenOutDecimals: 18,
-		ExpectedPool:     "0xb5bfb5adb736ea852bd58fec71db3b356c2a3938",
-		SwapAmount:       "10000000000000000000",
-		ExpectedNoHops:   1,
-	},
-	{
 		Name:             "Base-Boosted-StableSurge(GHO/USDC)",
 		Network:          "8453",
 		TokenIn:          "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
@@ -159,17 +229,6 @@ var BaseEndpoints = []BaseEndpoint{
 		ExpectedNoHops:   1,
 	},
 	{
-		Name:             "Avax-Boosted-StableSurge(USDT/USDC)",
-		Network:          "43114",
-		TokenIn:          "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7", // USDT
-		TokenOut:         "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", // USDC
-		TokenInDecimals:  6,
-		TokenOutDecimals: 6,
-		ExpectedPool:     "0x31ae873544658654ce767bde179fd1bbcb84850b",
-		SwapAmount:       "100000000000",
-		ExpectedNoHops:   1,
-	},
-	{
 		Name:             "Avax-Boosted-GyroE(BTC.b/wAVAX)",
 		Network:          "43114",
 		TokenIn:          "0x152b9d0FdC40C096757F570A51E494bd4b943E50", // BTC.b
@@ -181,36 +240,14 @@ var BaseEndpoints = []BaseEndpoint{
 		ExpectedNoHops:   1,
 	},
 	{
-		Name:             "Mainnet-Quant-BTF(PAXG/WBTC)",
-		Network:          "1",
-		TokenIn:          "0x45804880de22913dafe09f4980848ece6ecbaf78", // PAXG
-		TokenOut:         "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", // WBTC
-		TokenInDecimals:  18,
-		TokenOutDecimals: 8,
-		ExpectedPool:     "0x6b61d8680c4f9e560c8306807908553f95c749c5",
-		SwapAmount:       "100000000000000000",
-		ExpectedNoHops:   1,
-	},
-	{
 		Name:             "Hyper-Boosted-StableSurge-(USDT/USDXL)",
 		Network:          "999",
-		TokenIn:          "0xb8ce59fc3717ada4c02eadf9682a9e934f625ebb", // USDT
-		TokenOut:         "0xca79db4b49f608ef54a5cb813fbed3a6387bc645", // LastUSD
+		TokenIn:          "0xb88339CB7199b77E23DB6E890353E22632Ba630f", // USDC
+		TokenOut:         "0xBE65F0F410A72BeC163dC65d46c83699e957D588", // USDp
 		TokenInDecimals:  6,
 		TokenOutDecimals: 18,
-		ExpectedPool:     "0xba0163e18b8b6236d5046841e698f2f2d89bd4bd",
-		SwapAmount:       "100000000000", // 100k USDT
-		ExpectedNoHops:   1,
-	},
-	{
-		Name:             "Plasma-Boosted-StableSurge-(WETH/weETH)",
-		Network:          "9745",
-		TokenIn:          "0x9895D81bB462A195b4922ED7De0e3ACD007c32CB", // WETH
-		TokenOut:         "0xa3d68b74bf0528fdd07263c60d6488749044914b", // weETH
-		TokenInDecimals:  18,
-		TokenOutDecimals: 18,
-		ExpectedPool:     "0xda51975d78cb172b46d7292cec9fa9e74723ef3b",
-		SwapAmount:       "100000000000000000000", // 100 WETH
+		ExpectedPool:     "0xc5619cfcce9fae18eda1d1e923aa1fdea42d93b7",
+		SwapAmount:       "100000000000", // 100k USDC
 		ExpectedNoHops:   1,
 	},
 	{
@@ -222,17 +259,6 @@ var BaseEndpoints = []BaseEndpoint{
 		TokenOutDecimals: 6,
 		ExpectedPool:     "0x2daa146dfb7eaef0038f9f15b2ec1e4de003f72b",
 		SwapAmount:       "10000000000", // 10k USDC
-		ExpectedNoHops:   1,
-	},
-	{
-		Name:             "Mainnet-Boosted-StableSurge-(pmUSD/USDC)",
-		Network:          "1",
-		TokenIn:          "0xc0c17dd08263c16f6b64e772fb9b723bf1344ddf", // pmUSD
-		TokenOut:         "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", // USDC
-		TokenInDecimals:  18,
-		TokenOutDecimals: 6,
-		ExpectedPool:     "0xe00e947decfe01692070e113002705bdf77ddbd3",
-		SwapAmount:       "1000000000000000000000", // 1k pmUSDC
 		ExpectedNoHops:   1,
 	},
 }
@@ -277,7 +303,7 @@ var RouteSolvers = []RouteSolver{
 	{
 		Name:              "Barter",
 		Type:              "barter",
-		SupportedNetworks: []string{"1", "8453"}, // Mainnet, Base
+		SupportedNetworks: []string{"1"}, // Mainnet
 	},
 	{
 		Name:              "OpenOcean",

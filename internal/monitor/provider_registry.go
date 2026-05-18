@@ -221,16 +221,31 @@ func (r *ProviderRegistry) checkWithGenericClientForMarketPrice(endpoint *collec
 	endpoint.MarketPrice = tempEndpoint.MarketPrice
 }
 
-// isWIPCase checks if the endpoint is a WIP case that should be handled specially
+// isWIPCase checks if the endpoint is a WIP case that should be handled
+// specially. When PoolType is set (discovered rows), the structured type is
+// the source of truth; otherwise we fall back to substring matching on the
+// endpoint name (BaseEndpoints rows encode the pool family in their name).
 func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
+	pt := strings.ToUpper(endpoint.PoolType)
 	switch endpoint.RouteSolver {
 	case "1inch":
+		if pt != "" {
+			return strings.Contains(pt, "GYRO") ||
+				strings.Contains(pt, "QUANT") ||
+				endpoint.Network == "43114"
+		}
 		return strings.Contains(endpoint.Name, "GyroE") ||
 			strings.Contains(endpoint.Name, "Quant") ||
 			endpoint.Network == "43114"
 	case "odos":
+		if pt != "" {
+			return strings.Contains(pt, "QUANT")
+		}
 		return strings.Contains(endpoint.Name, "Quant")
 	case "openocean":
+		if pt != "" {
+			return strings.Contains(pt, "QUANT")
+		}
 		return strings.Contains(endpoint.Name, "Quant")
 	default:
 		return false
@@ -241,14 +256,19 @@ func (r *ProviderRegistry) isWIPCase(endpoint *collector.Endpoint) bool {
 func (r *ProviderRegistry) handleWIPCase(endpoint *collector.Endpoint) {
 	endpoint.LastChecked = time.Now()
 
+	pt := strings.ToUpper(endpoint.PoolType)
+	hasGyro := (pt != "" && strings.Contains(pt, "GYRO")) || (pt == "" && strings.Contains(endpoint.Name, "GyroE"))
+	hasQuant := (pt != "" && strings.Contains(pt, "QUANT")) || (pt == "" && strings.Contains(endpoint.Name, "Quant"))
+
 	var message string
 	switch endpoint.RouteSolver {
 	case "1inch":
-		if strings.Contains(endpoint.Name, "GyroE") {
+		switch {
+		case hasGyro:
 			message = "1inch GyroE integration WIP"
-		} else if strings.Contains(endpoint.Name, "Quant") {
+		case hasQuant:
 			message = "1inch QuantAMM integration WIP"
-		} else if endpoint.Network == "43114" {
+		case endpoint.Network == "43114":
 			message = "1inch network support WIP"
 		}
 	case "odos":

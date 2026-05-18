@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"go-monitoring/config"
 	"go-monitoring/handlers"
 	"go-monitoring/internal/collector"
+	"go-monitoring/internal/discovery"
 	"go-monitoring/internal/monitor"
 	"go-monitoring/notifications"
 
@@ -39,60 +39,44 @@ func main() {
 		fmt.Println("No .env file found, using system environment variables")
 	}
 
-	// Generate endpoints by combining base configurations with route solvers
-	var generatedEndpoints []collector.Endpoint
+	// Expand BaseEndpoints across every enabled route solver that supports
+	// the endpoint's network. Shared with the discovered test set builder so
+	// the network-support filter cannot drift between the two paths.
+	baseInputs := make([]monitor.ExpandInput, 0, len(config.BaseEndpoints))
 	for _, base := range config.BaseEndpoints {
-		for _, solver := range config.GetEnabledRouteSolvers() {
-			// Check if the solver supports this network
-			supported := false
-			for _, network := range solver.SupportedNetworks {
-				if network == base.Network {
-					supported = true
-					break
-				}
-			}
-
-			if !supported {
-				continue // Skip unsupported network combinations
-			}
-
-			endpoint := collector.Endpoint{
-				Name:             fmt.Sprintf("%s-%s", solver.Name, base.Name),
-				BaseName:         base.Name,
-				SolverName:       solver.Name,
-				RouteSolver:      solver.Type,
-				Network:          base.Network,
-				TokenIn:          base.TokenIn,
-				TokenOut:         base.TokenOut,
-				TokenInDecimals:  base.TokenInDecimals,
-				TokenOutDecimals: base.TokenOutDecimals,
-				SwapAmount:       base.SwapAmount,
-				ExpectedPool:     base.ExpectedPool,
-				ExpectedNoHops:   base.ExpectedNoHops,
-				Delay:            config.GetRouteSolverDelay(solver.Type),
-				LastStatus:       "unknown",
-				LastChecked:      time.Time{},
-				Message:          "",
-			}
-			generatedEndpoints = append(generatedEndpoints, endpoint)
-		}
+		baseInputs = append(baseInputs, monitor.ExpandInput{
+			BaseName:         base.Name,
+			Network:          base.Network,
+			TokenIn:          base.TokenIn,
+			TokenOut:         base.TokenOut,
+			TokenInDecimals:  base.TokenInDecimals,
+			TokenOutDecimals: base.TokenOutDecimals,
+			SwapAmount:       base.SwapAmount,
+			ExpectedPool:     base.ExpectedPool,
+			ExpectedNoHops:   base.ExpectedNoHops,
+		})
 	}
-
-	// Initialize the collector with the generated endpoints
-	collector.SetEndpoints(generatedEndpoints)
+	collector.SetEndpoints(monitor.ExpandForSolvers(baseInputs))
 
 	// Initialize the provider registry
 	monitor.InitializeRegistry()
 
 	// Get check interval from environment variable in main thread
 	checkIntervalHours := getCheckIntervalHours()
+	discoveryIntervalHours := config.GetDiscoveryIntervalHours()
+
+	// Register the discovered test set runner before starting discovery so the
+	// first refresh's results are exercised against the providers.
+	discovery.SetTestSetRunner(monitor.RunDiscoveredOnce)
 
 	go monitor.MonitorAPIs(checkIntervalHours) // Start monitoring in the background
+	go discovery.Run(discoveryIntervalHours)   // Start Balancer V3 pool discovery
 	notifications.SendEmail("Service starting")
 
 	// Register HTTP handlers
 	http.HandleFunc("/", handlers.DashboardHandler)
 	http.HandleFunc("/check/", handlers.CheckEndpointHandler)
+	http.HandleFunc("/pools", handlers.PoolsHandler)
 
 	fmt.Println("Server running on http://localhost:8080")
 	http.ListenAndServe(":8080", nil)

@@ -2,76 +2,18 @@ package handlers
 
 import (
 	"fmt"
+	"math/big"
 	"net/http"
 	"sort"
-	"time"
 
 	"go-monitoring/internal/collector"
+	"go-monitoring/internal/discovery"
 	"go-monitoring/internal/monitor"
-	"math/big"
 )
 
-// formatTimeAgo returns a human-readable time format
-func formatTimeAgo(t time.Time) string {
-	if t.IsZero() {
-		return "Never"
-	}
-
-	now := time.Now()
-	diff := now.Sub(t)
-
-	// If less than a minute ago
-	if diff < time.Minute {
-		return "Just now"
-	}
-
-	// If less than an hour ago
-	if diff < time.Hour {
-		minutes := int(diff.Minutes())
-		if minutes == 1 {
-			return "1 minute ago"
-		}
-		return fmt.Sprintf("%d minutes ago", minutes)
-	}
-
-	// If less than a day ago
-	if diff < 24*time.Hour {
-		hours := int(diff.Hours())
-		if hours == 1 {
-			return "1 hour ago"
-		}
-		return fmt.Sprintf("%d hours ago", hours)
-	}
-
-	// If more than a day ago, show date and time
-	return t.Format("Jan 02 15:04:05")
-}
-
-// getNetworkName maps network IDs to their names
-func getNetworkName(network string) string {
-	switch network {
-	case "1":
-		return "ethereum"
-	case "8453":
-		return "base"
-	case "42161":
-		return "arbitrum"
-	case "100":
-		return "gnosis"
-	case "43114":
-		return "avalanche"
-	case "999":
-		return "hyperevm"
-	case "9745":
-		return "plasma"
-	case "143":
-		return "monad"
-	default:
-		return network
-	}
-}
-
-// CheckEndpointHandler triggers a check for a specific endpoint
+// CheckEndpointHandler triggers a check for a specific endpoint. Tries the
+// BaseEndpoints store first, falling back to the discovered-endpoints store
+// so the "Check Now" button works for both sections of the dashboard.
 func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -80,40 +22,195 @@ func CheckEndpointHandler(w http.ResponseWriter, r *http.Request) {
 
 	name := r.URL.Path[len("/check/"):]
 
-	// Use the collector to update the endpoint directly
-	updated := collector.UpdateEndpointByName(name, func(endpoint *collector.Endpoint) {
-		// Make both calls: Balancer-only and market price
+	runCheck := func(endpoint *collector.Endpoint) {
 		monitor.CheckAPI(endpoint, nil) // nil options will trigger both calls
-	})
+	}
 
-	if !updated {
-		http.Error(w, "Endpoint not found", http.StatusNotFound)
+	if collector.UpdateEndpointByName(name, runCheck) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	if collector.UpdateDiscoveredEndpointByName(name, runCheck) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	// Redirect back to the dashboard
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Error(w, "Endpoint not found", http.StatusNotFound)
 }
 
-// DashboardHandler handles the main dashboard page
+// DashboardHandler handles the main dashboard page. Renders two tables with
+// identical layout: the BaseEndpoints results (driven by the hourly loop) and
+// the discovered test set results (driven by the daily discovery loop).
 func DashboardHandler(w http.ResponseWriter, r *http.Request) {
-	// Get a copy of endpoints from the collector
-	endpoints := collector.GetEndpointsCopy()
+	fmt.Fprint(w, dashboardHeader)
+	fmt.Fprintf(w, `<div style="margin-bottom:12px;font-size:0.95em;"><a href="/pools" style="color:#1565c0;text-decoration:none;">Discovered pools &rarr;</a> <span style="color:#666;">(last refresh: %s)</span></div>`,
+		formatTimeAgo(discovery.LastSuccessAt()))
 
-	// Group endpoints by BaseName
-	endpointGroups := make(map[string][]collector.Endpoint)
-	for _, endpoint := range endpoints {
-		endpointGroups[endpoint.BaseName] = append(endpointGroups[endpoint.BaseName], endpoint)
+	renderEndpointsTable(w, "endpoints-table", collector.GetEndpointsCopy())
+
+	fmt.Fprintf(w, `<h2 style="margin-top:32px;">Discovered test set (daily)</h2>`)
+	discovered := collector.GetDiscoveredEndpointsCopy()
+	if len(discovered) == 0 {
+		fmt.Fprint(w, `<div style="padding:16px;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;color:#5d4037;margin-bottom:12px;">No discovered test rows yet; first daily run pending.</div>`)
+	} else {
+		renderEndpointsTable(w, "discovered-table", discovered)
 	}
 
-	// Sort base names for consistent display
-	var baseNames []string
-	for baseName := range endpointGroups {
-		baseNames = append(baseNames, baseName)
+	fmt.Fprintln(w, "</body></html>")
+}
+
+// renderEndpointsTable renders one full <table>…</table> for a slice of
+// endpoints grouped by BaseName. Both the BaseEndpoints and discovered
+// sections share this implementation so the layout, sorting, and per-row
+// highlighting logic can't drift.
+func renderEndpointsTable(w http.ResponseWriter, tableID string, endpoints []collector.Endpoint) {
+	groups := make(map[string][]collector.Endpoint)
+	for _, e := range endpoints {
+		groups[e.BaseName] = append(groups[e.BaseName], e)
+	}
+	baseNames := make([]string, 0, len(groups))
+	for name := range groups {
+		baseNames = append(baseNames, name)
 	}
 	sort.Strings(baseNames)
 
-	fmt.Fprintln(w, `<html><head>
+	fmt.Fprintf(w, `<table id="%s" border="1"><thead><tr>`, tableID)
+	fmt.Fprint(w, `<th class='name-column'>Name</th><th>Status</th><th>Message</th>`)
+	fmt.Fprintf(w, `<th class='sortable-header' onclick="sortTable('%s', 3)">Balancer Price<span class='sort-arrow' id='%s-arrow-3'>&#8597;</span></th>`, tableID, tableID)
+	fmt.Fprintf(w, `<th class='sortable-header' onclick="sortTable('%s', 4)">Market Price<span class='sort-arrow' id='%s-arrow-4'>&#8597;</span></th>`, tableID, tableID)
+	fmt.Fprint(w, `<th>Last Checked</th><th>Actions</th></tr></thead><tbody>`)
+
+	for _, baseName := range baseNames {
+		groupEndpoints := groups[baseName]
+		networkName := getNetworkName(groupEndpoints[0].Network)
+		poolLink := fmt.Sprintf("https://balancer.fi/pools/%s/v3/%s", networkName, groupEndpoints[0].ExpectedPool)
+		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='7'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a><br>Amount: %s</span></td></tr>",
+			baseName,
+			groupEndpoints[0].TokenIn,
+			groupEndpoints[0].TokenOut,
+			poolLink,
+			groupEndpoints[0].ExpectedPool,
+			groupEndpoints[0].SwapAmount)
+
+		sorted := make([]collector.Endpoint, len(groupEndpoints))
+		copy(sorted, groupEndpoints)
+		sort.Slice(sorted, func(i, j int) bool {
+			return parseBigInt(sorted[i].ReturnAmount).Cmp(parseBigInt(sorted[j].ReturnAmount)) > 0
+		})
+
+		for _, endpoint := range sorted {
+			renderSolverRow(w, endpoint)
+		}
+	}
+
+	fmt.Fprint(w, `</tbody></table>`)
+}
+
+// renderSolverRow writes one solver-level <tr> with status, return amount,
+// market/on-chain price, deviation highlighting, and the Check Now button.
+func renderSolverRow(w http.ResponseWriter, endpoint collector.Endpoint) {
+	statusClass := "status-unknown"
+	switch endpoint.LastStatus {
+	case "up":
+		statusClass = "status-up"
+	case "down":
+		statusClass = "status-down"
+	case "disabled":
+		statusClass = "status-disabled"
+	}
+
+	returnAmountDisplay := "N/A"
+	if endpoint.ReturnAmount != "" {
+		returnAmountDisplay = endpoint.ReturnAmount
+	}
+
+	marketPriceDisplay := "N/A"
+	priceLabel := ""
+	returnAmountClass := ""
+	marketPriceClass := ""
+
+	if endpoint.RouteSolver == "balancer_sor" {
+		switch {
+		case endpoint.OnChainPrice != "":
+			marketPriceDisplay = endpoint.OnChainPrice
+			priceLabel = " (on-chain)"
+		case endpoint.OnChainQueryError != "":
+			marketPriceDisplay = "Query Failed"
+			priceLabel = " (error)"
+			marketPriceClass = " class='price-error'"
+		default:
+			marketPriceDisplay = "N/A"
+			priceLabel = " (on-chain)"
+		}
+	} else if endpoint.MarketPrice != "" {
+		marketPriceDisplay = endpoint.MarketPrice
+	}
+
+	returnAmountBig := parseBigInt(endpoint.ReturnAmount)
+	var priceBig *big.Int
+	if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" && endpoint.OnChainQueryError == "" {
+		priceBig = parseBigInt(endpoint.OnChainPrice)
+	} else {
+		priceBig = parseBigInt(endpoint.MarketPrice)
+	}
+
+	if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" {
+		if returnAmountBig.Sign() > 0 && priceBig.Sign() > 0 {
+			diff := new(big.Int).Abs(new(big.Int).Sub(returnAmountBig, priceBig))
+			diffFloat := new(big.Float).SetInt(diff)
+			priceFloat := new(big.Float).SetInt(priceBig)
+			if priceFloat.Sign() > 0 {
+				percent := new(big.Float).Quo(diffFloat, priceFloat)
+				percent.Mul(percent, big.NewFloat(100))
+				pctVal, _ := percent.Float64()
+				if pctVal > 0.5 {
+					returnAmountClass = " class='price-warning'"
+					marketPriceClass = " class='price-warning'"
+				} else if returnAmountBig.Cmp(priceBig) > 0 {
+					returnAmountClass = " class='highest-value'"
+				} else if priceBig.Cmp(returnAmountBig) > 0 {
+					marketPriceClass = " class='highest-value'"
+				}
+			}
+		}
+	} else if returnAmountBig.Sign() > 0 || priceBig.Sign() > 0 {
+		if returnAmountBig.Cmp(priceBig) > 0 {
+			returnAmountClass = " class='highest-value'"
+		} else if priceBig.Cmp(returnAmountBig) > 0 {
+			marketPriceClass = " class='highest-value'"
+		}
+	}
+
+	fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td%s>%s</td><td%s>%s%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
+		endpoint.SolverName,
+		statusClass,
+		endpoint.LastStatus,
+		endpoint.Message,
+		returnAmountClass,
+		returnAmountDisplay,
+		marketPriceClass,
+		marketPriceDisplay,
+		priceLabel,
+		formatTimeAgo(endpoint.LastChecked),
+		endpoint.Name)
+}
+
+// parseBigInt parses a decimal string into a *big.Int. Empty or "N/A" map to
+// zero so sorting / comparison stay well-defined.
+func parseBigInt(s string) *big.Int {
+	v := new(big.Int)
+	if s == "" || s == "N/A" {
+		return v
+	}
+	if _, ok := v.SetString(s, 10); !ok {
+		return new(big.Int)
+	}
+	return v
+}
+
+// dashboardHeader is the static <html><head>...<body><h1> prefix. Extracted
+// so the body code stays compact.
+const dashboardHeader = `<html><head>
 		<style>
 			.status-up { background-color: #90EE90; }
 			.status-down { background-color: #FFB6C1; }
@@ -122,7 +219,7 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 			.highest-value { background-color: #90EE90; font-weight: bold; }
 			.price-warning { background-color: #FFB347; font-weight: bold; }
 			.price-error { background-color: #FF6B6B; color: white; font-weight: bold; }
-			table { border-collapse: collapse; width: 100%; }
+			table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
 			th, td { padding: 8px; text-align: left; }
 			.name-column { white-space: nowrap; }
 			.token-info { font-family: monospace; }
@@ -139,76 +236,49 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 				cursor: pointer;
 				border-radius: 4px;
 			}
-			.check-button:hover {
-				background-color: #45a049;
-			}
-			.base-name-row {
-				background-color: #e6f3ff;
-				font-weight: bold;
-			}
-			.solver-row {
-				background-color: #f9f9f9;
-			}
-			.sortable-header {
-				cursor: pointer;
-				user-select: none;
-				position: relative;
-				padding-right: 20px;
-			}
-			.sortable-header:hover {
-				background-color: #e0e0e0;
-			}
-			.sort-arrow {
-				position: absolute;
-				right: 5px;
-				top: 50%;
-				transform: translateY(-50%);
-				font-size: 12px;
-				color: #666;
-			}
-			.sort-arrow.active {
-				color: #000;
-				font-weight: bold;
-			}
+			.check-button:hover { background-color: #45a049; }
+			.base-name-row { background-color: #e6f3ff; font-weight: bold; }
+			.solver-row { background-color: #f9f9f9; }
+			.sortable-header { cursor: pointer; user-select: none; position: relative; padding-right: 20px; }
+			.sortable-header:hover { background-color: #e0e0e0; }
+			.sort-arrow { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #666; }
+			.sort-arrow.active { color: #000; font-weight: bold; }
 		</style>
 		<script>
-			let currentSort = { column: 4, direction: 'desc' }; // Default sort by Market Price desc
-			
+			const sortState = {};
+
 			function checkEndpoint(name) {
-				fetch('/check/' + name, {
-					method: 'POST',
-				}).then(() => {
-					window.location.reload();
-				});
+				fetch('/check/' + name, { method: 'POST' }).then(() => window.location.reload());
 			}
-			
-			function sortTable(column) {
-				const table = document.querySelector('table');
+
+			function sortTable(tableId, column) {
+				const table = document.getElementById(tableId);
+				if (!table) return;
 				const tbody = table.querySelector('tbody');
 				const allRows = Array.from(tbody.querySelectorAll('tr'));
-				
-				// Determine sort direction
-				if (currentSort.column === column) {
-					currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+
+				if (!sortState[tableId]) sortState[tableId] = { column: 4, direction: 'desc' };
+				const state = sortState[tableId];
+
+				if (state.column === column) {
+					state.direction = state.direction === 'asc' ? 'desc' : 'asc';
 				} else {
-					currentSort.column = column;
-					currentSort.direction = 'desc';
+					state.column = column;
+					state.direction = 'desc';
 				}
-				
-				// Update arrow indicators
-				document.querySelectorAll('.sort-arrow').forEach(arrow => {
+
+				table.querySelectorAll('.sort-arrow').forEach(arrow => {
 					arrow.classList.remove('active');
-					arrow.textContent = '↕';
+					arrow.textContent = '\u2195';
 				});
-				
-				const activeArrow = document.getElementById('arrow-' + column);
-				activeArrow.classList.add('active');
-				activeArrow.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
-				
-				// Group rows by base name rows
+				const activeArrow = document.getElementById(tableId + '-arrow-' + column);
+				if (activeArrow) {
+					activeArrow.classList.add('active');
+					activeArrow.textContent = state.direction === 'asc' ? '\u2191' : '\u2193';
+				}
+
 				const groups = [];
 				let currentGroup = null;
-				
 				allRows.forEach(row => {
 					if (row.classList.contains('base-name-row')) {
 						currentGroup = { header: row, solvers: [] };
@@ -217,238 +287,37 @@ func DashboardHandler(w http.ResponseWriter, r *http.Request) {
 						currentGroup.solvers.push(row);
 					}
 				});
-				
-				// Sort solver rows within each group
+
 				groups.forEach(group => {
 					group.solvers.sort((a, b) => {
 						const aVal = a.cells[column].textContent.trim();
 						const bVal = b.cells[column].textContent.trim();
-						
-						// Handle N/A values
 						if (aVal === 'N/A' && bVal === 'N/A') return 0;
 						if (aVal === 'N/A') return 1;
 						if (bVal === 'N/A') return -1;
-						
-						// Parse as BigInt for proper large number comparison
 						let aNum, bNum;
-						try {
-							aNum = BigInt(aVal);
-							bNum = BigInt(bVal);
-						} catch (e) {
-							// Fallback to 0 if parsing fails
-							aNum = BigInt(0);
-							bNum = BigInt(0);
-						}
-						
-						if (currentSort.direction === 'asc') {
-							return aNum < bNum ? -1 : aNum > bNum ? 1 : 0;
-						} else {
-							return aNum > bNum ? -1 : aNum < bNum ? 1 : 0;
-						}
+						try { aNum = BigInt(aVal); bNum = BigInt(bVal); }
+						catch (e) { aNum = BigInt(0); bNum = BigInt(0); }
+						if (state.direction === 'asc') return aNum < bNum ? -1 : aNum > bNum ? 1 : 0;
+						return aNum > bNum ? -1 : aNum < bNum ? 1 : 0;
 					});
 				});
-				
-				// Clear tbody and re-append sorted groups
+
 				tbody.innerHTML = '';
 				groups.forEach(group => {
 					tbody.appendChild(group.header);
-					group.solvers.forEach(solver => {
-						tbody.appendChild(solver);
-					});
+					group.solvers.forEach(solver => tbody.appendChild(solver));
 				});
 			}
-			
-			// Initialize default sort on page load
+
 			document.addEventListener('DOMContentLoaded', function() {
-				// Small delay to ensure all content is rendered
 				setTimeout(function() {
-					// Force the sort state and apply sorting
-					currentSort.column = 4;
-					currentSort.direction = 'asc';
-					sortTable(4); // Sort by Market Price desc by default
+					document.querySelectorAll('table').forEach(t => {
+						if (!t.id) return;
+						sortState[t.id] = { column: 4, direction: 'asc' };
+						sortTable(t.id, 4);
+					});
 				}, 100);
 			});
 		</script>
-	</head><body><h1>API Monitor</h1>`)
-	fmt.Fprintln(w, "<table border='1'><thead><tr><th class='name-column'>Name</th><th>Status</th><th>Message</th><th class='sortable-header' onclick='sortTable(3)'>Balancer Price<span class='sort-arrow' id='arrow-3'>↕</span></th><th class='sortable-header' onclick='sortTable(4)'>Market Price<span class='sort-arrow' id='arrow-4'>↕</span></th><th>Last Checked</th><th>Actions</th></tr></thead><tbody>")
-
-	for _, baseName := range baseNames {
-		// Add base name row with token info
-		networkName := getNetworkName(endpointGroups[baseName][0].Network)
-		poolLink := fmt.Sprintf("https://balancer.fi/pools/%s/v3/%s", networkName, endpointGroups[baseName][0].ExpectedPool)
-		fmt.Fprintf(w, "<tr class='base-name-row'><td colspan='7'>%s<br><span style='font-weight: normal; font-size: 0.9em; margin-top: 10px; display: inline-block;'>In: %s<br>Out: %s<br>Pool: <a href='%s' target='_blank'>%s</a><br>Amount: %s</span></td></tr>",
-			baseName,
-			endpointGroups[baseName][0].TokenIn,
-			endpointGroups[baseName][0].TokenOut,
-			poolLink,
-			endpointGroups[baseName][0].ExpectedPool,
-			endpointGroups[baseName][0].SwapAmount)
-
-		// Add solver rows
-		// Sort endpoints by return amount (largest first)
-		sortedEndpoints := make([]collector.Endpoint, len(endpointGroups[baseName]))
-		copy(sortedEndpoints, endpointGroups[baseName])
-
-		// Sort by return amount in descending order
-		sort.Slice(sortedEndpoints, func(i, j int) bool {
-			// Convert return amounts to big.Int for proper numeric comparison
-			amountI := sortedEndpoints[i].ReturnAmount
-			amountJ := sortedEndpoints[j].ReturnAmount
-
-			// If either amount is empty/N/A, treat as 0
-			if amountI == "" || amountI == "N/A" {
-				amountI = "0"
-			}
-			if amountJ == "" || amountJ == "N/A" {
-				amountJ = "0"
-			}
-
-			// Parse as big.Int for comparison
-			bigI := new(big.Int)
-			bigJ := new(big.Int)
-
-			if _, ok := bigI.SetString(amountI, 10); !ok {
-				bigI.SetString("0", 10)
-			}
-			if _, ok := bigJ.SetString(amountJ, 10); !ok {
-				bigJ.SetString("0", 10)
-			}
-
-			// Return true if i should come before j (larger amount first)
-			return bigI.Cmp(bigJ) > 0
-		})
-
-		for _, endpoint := range sortedEndpoints {
-			statusClass := "status-unknown"
-			if endpoint.LastStatus == "up" {
-				statusClass = "status-up"
-			} else if endpoint.LastStatus == "down" {
-				statusClass = "status-down"
-			} else if endpoint.LastStatus == "disabled" {
-				statusClass = "status-disabled"
-			}
-
-			// Format return amount display
-			returnAmountDisplay := "N/A"
-			if endpoint.ReturnAmount != "" {
-				returnAmountDisplay = endpoint.ReturnAmount
-			}
-
-			// Format market/on-chain price display
-			marketPriceDisplay := "N/A"
-			priceLabel := ""
-			returnAmountClass := ""
-			marketPriceClass := ""
-			
-			if endpoint.RouteSolver == "balancer_sor" {
-				if endpoint.OnChainPrice != "" {
-					// For balancer_sor, show on-chain price if available
-					marketPriceDisplay = endpoint.OnChainPrice
-					priceLabel = " (on-chain)"
-				} else if endpoint.OnChainQueryError != "" {
-					// Show error state
-					marketPriceDisplay = "Query Failed"
-					priceLabel = " (error)"
-					marketPriceClass = " class='price-error'"
-				} else {
-					// No query attempted yet
-					marketPriceDisplay = "N/A"
-					priceLabel = " (on-chain)"
-				}
-			} else if endpoint.MarketPrice != "" {
-				// For other providers, show market price
-				marketPriceDisplay = endpoint.MarketPrice
-			}
-
-			// Compare return amount vs market/on-chain price within this row (only if both are valid)
-
-			// Parse return amount
-			returnAmountStr := endpoint.ReturnAmount
-			if returnAmountStr == "" || returnAmountStr == "N/A" {
-				returnAmountStr = "0"
-			}
-			returnAmountBig := new(big.Int)
-			if _, ok := returnAmountBig.SetString(returnAmountStr, 10); !ok {
-				returnAmountBig.SetString("0", 10)
-			}
-
-			// Parse market/on-chain price
-			var priceBig *big.Int
-			if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" && endpoint.OnChainQueryError == "" {
-				priceStr := endpoint.OnChainPrice
-				if priceStr == "" || priceStr == "N/A" {
-					priceStr = "0"
-				}
-				priceBig = new(big.Int)
-				if _, ok := priceBig.SetString(priceStr, 10); !ok {
-					priceBig.SetString("0", 10)
-				}
-			} else {
-				marketPriceStr := endpoint.MarketPrice
-				if marketPriceStr == "" || marketPriceStr == "N/A" {
-					marketPriceStr = "0"
-				}
-				priceBig = new(big.Int)
-				if _, ok := priceBig.SetString(marketPriceStr, 10); !ok {
-					priceBig.SetString("0", 10)
-				}
-			}
-
-			// For balancer_sor, check for deviation > 0.5%
-			if endpoint.RouteSolver == "balancer_sor" && endpoint.OnChainPrice != "" {
-				if returnAmountBig.Cmp(big.NewInt(0)) > 0 && priceBig.Cmp(big.NewInt(0)) > 0 {
-					// Calculate percentage deviation: abs(ReturnAmount - OnChainPrice) / OnChainPrice * 100
-					diff := new(big.Int).Sub(returnAmountBig, priceBig)
-					diff.Abs(diff)
-					
-					// Convert to big.Float for division
-					diffFloat := new(big.Float).SetInt(diff)
-					priceFloat := new(big.Float).SetInt(priceBig)
-					
-					// Calculate percentage: (diff / price) * 100
-					if priceFloat.Cmp(big.NewFloat(0)) > 0 {
-						percent := new(big.Float).Quo(diffFloat, priceFloat)
-						percent.Mul(percent, big.NewFloat(100))
-						
-						percentVal, _ := percent.Float64()
-						if percentVal > 0.5 {
-							// Deviation > 0.5%, highlight both cells with warning
-							returnAmountClass = " class='price-warning'"
-							marketPriceClass = " class='price-warning'"
-						} else {
-							// Within threshold, highlight larger value
-							if returnAmountBig.Cmp(priceBig) > 0 {
-								returnAmountClass = " class='highest-value'"
-							} else if priceBig.Cmp(returnAmountBig) > 0 {
-								marketPriceClass = " class='highest-value'"
-							}
-						}
-					}
-				}
-			} else {
-				// For other providers, compare and highlight the larger value
-				if returnAmountBig.Cmp(big.NewInt(0)) > 0 || priceBig.Cmp(big.NewInt(0)) > 0 {
-					if returnAmountBig.Cmp(priceBig) > 0 {
-						returnAmountClass = " class='highest-value'"
-					} else if priceBig.Cmp(returnAmountBig) > 0 {
-						marketPriceClass = " class='highest-value'"
-					}
-				}
-			}
-
-			fmt.Fprintf(w, "<tr class='solver-row'><td class='name-column'>%s</td><td class='%s'>%s</td><td>%s</td><td%s>%s</td><td%s>%s%s</td><td>%s</td><td><button class='check-button' onclick='checkEndpoint(\"%s\")'>Check Now</button></td></tr>",
-				endpoint.SolverName,
-				statusClass,
-				endpoint.LastStatus,
-				endpoint.Message,
-				returnAmountClass,
-				returnAmountDisplay,
-				marketPriceClass,
-				marketPriceDisplay,
-				priceLabel,
-				formatTimeAgo(endpoint.LastChecked),
-				endpoint.Name)
-		}
-	}
-	fmt.Fprintln(w, "</tbody></table></body></html>")
-}
+	</head><body><h1>API Monitor</h1>`

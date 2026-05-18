@@ -250,6 +250,8 @@ func (b *OpenOceanURLBuilder) BuildURL(endpoint *collector.Endpoint, options api
 			fmt.Printf("%s[WARNING]%s OpenOcean: Failed to fetch Balancer DEX indices for chain %s: %v\n", config.ColorYellow, config.ColorReset, chainName, err)
 		} else if enabledDexIds != "" {
 			params.Add("enabledDexIds", enabledDexIds)
+		} else {
+			return "", fmt.Errorf("OpenOcean has no Balancer V3 in dexList for chain %q: %w", chainName, api.ErrBuildURLUnsupported)
 		}
 	}
 

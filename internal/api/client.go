@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -171,7 +172,11 @@ func (c *APIClient) CheckAPI(endpoint *collector.Endpoint, handler ResponseHandl
 		// Build the URL using the provider-specific builder
 		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
-			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			if errors.Is(err, ErrBuildURLUnsupported) {
+				c.handleError(endpoint, "unsupported", err.Error())
+			} else {
+				c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			}
 			return
 		}
 		fmt.Println("URL: ", fullURL)
@@ -186,7 +191,11 @@ func (c *APIClient) CheckAPI(endpoint *collector.Endpoint, handler ResponseHandl
 		// Build the URL using the provider-specific builder
 		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
-			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			if errors.Is(err, ErrBuildURLUnsupported) {
+				c.handleError(endpoint, "unsupported", err.Error())
+			} else {
+				c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			}
 			return
 		}
 		fmt.Println("URL: ", fullURL)
@@ -229,7 +238,11 @@ func (c *APIClient) CheckAPIForMarketPrice(endpoint *collector.Endpoint, handler
 		// Build the URL using the provider-specific builder
 		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
-			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			if errors.Is(err, ErrBuildURLUnsupported) {
+				c.handleError(endpoint, "unsupported", err.Error())
+			} else {
+				c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			}
 			return
 		}
 		fmt.Println("Market Price URL: ", fullURL)
@@ -244,7 +257,11 @@ func (c *APIClient) CheckAPIForMarketPrice(endpoint *collector.Endpoint, handler
 		// Build the URL using the provider-specific builder
 		fullURL, err := urlBuilder.BuildURL(endpoint, options)
 		if err != nil {
-			c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			if errors.Is(err, ErrBuildURLUnsupported) {
+				c.handleError(endpoint, "unsupported", err.Error())
+			} else {
+				c.handleError(endpoint, "error", fmt.Sprintf("Error building URL: %v", err))
+			}
 			return
 		}
 		fmt.Println("Market Price URL: ", fullURL)
@@ -271,6 +288,10 @@ func (c *APIClient) CheckAPIForMarketPrice(endpoint *collector.Endpoint, handler
 func (c *APIClient) handleError(endpoint *collector.Endpoint, status, message string) {
 	endpoint.LastStatus = status
 	endpoint.Message = message
+	if status == "unsupported" {
+		fmt.Printf("%s[UNSUPPORTED]%s %s: %s\n", config.ColorCyan, config.ColorReset, endpoint.Name, message)
+		return
+	}
 	fmt.Printf("%s[ERROR]%s %s: %s\n", config.ColorRed, config.ColorReset, endpoint.Name, message)
 	notifications.SendEmail(fmt.Sprintf("[%s] %s", endpoint.Name, message))
 }
